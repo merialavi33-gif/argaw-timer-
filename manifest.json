@@ -2,7 +2,7 @@
   "name": "የስልክና አካውንት ታስክ መቆጣጠሪያ",
   "short_name": "AGB Task",
   "description": "ለ6 ስልኮች የተከፋፈሉ የPoppo, Tello, Kaya እና Yago ታስኮችንና ነጥቦችን በቀላሉ የሚቆጣጠሩበት አፕሊኬሽን።",
-  "start_url": "./index.html",
+  "start_url": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#020617",
@@ -19,13 +19,7 @@
       "src": "./icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "./icon.svg",
-      "sizes": "192x192 512x512",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ]
 }
