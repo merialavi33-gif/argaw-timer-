@@ -217,71 +217,25 @@
 
         <!-- Footer -->
         <div class="mt-8 text-center pb-4">
-            <p class="text-[10px] text-slate-600">የስልክና አካውንት ታስክ መቆጣጠሪያ v2.2 (Firebase Realtime + Push Notifications)</p>
+            <p class="text-[10px] text-slate-600">የስልክና አካውንት ታስክ መቆጣጠሪያ v2.3 (Firebase Realtime + Sound Handler)</p>
         </div>
     </main>
 
-    <!-- ሞጁላር Firebase Scripts ለ Messaging (Notifications) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js";
-
-        const firebaseConfigModular = {
-            apiKey: "AIzaSyBH68jMv7c6WGB_z73e2IsTn3KTi2tg5c4",
-            authDomain: "argaw-timer.firebaseapp.com",
-            projectId: "argaw-timer",
-            storageBucket: "argaw-timer.firebasestorage.app",
-            messagingSenderId: "951329293569",
-            appId: "1:951329293569:web:00d5c0a6888972162a8700"
-        };
-
-        const appModular = initializeApp(firebaseConfigModular, "modular-app");
-        const messaging = getMessaging(appModular);
-
-        window.requestNotificationPermission = async function() {
+    <!-- ቀላል የድምፅ ማጫወቻ እና ኖቲፊኬሽን ሃንድለር (ስህተት የማይፈጥር) -->
+    <script>
+        window.requestNotificationPermission = function() {
             try {
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    console.log('Notification permission granted.');
-                    
-                    const currentToken = await getToken(messaging, { 
-                        vapidKey: 'BC2PNn5zI8lqDsL7hu75t4p9qoQJnT0jxhc2vEK8o4Ddqq_2Km2DQQOLVhMwW6h9r2RXhY_BG3t98tQr5_gw29Q' 
-                    });
-                    
-                    if (currentToken) {
-                        console.log('FCM Token generated:', currentToken);
-                        const safeTokenKey = currentToken.replace(/[^a-zA-Z0-9]/g, '_');
-                        if (typeof db !== 'undefined') {
-                            db.ref('fcm_tokens/' + safeTokenKey).set({
-                                token: currentToken,
-                                updatedAt: Date.now()
-                            });
-                        }
-                        alert('የድምፅ ማሳወቂያው በትክክል ተፈቅዷል! ከሰርቨር ጋር ተገናኝቷል::');
-                    } else {
-                        console.log('No registration token available.');
-                        alert('ማሳወቂያ ማቀናበር አልተቻለም።');
-                    }
-                } else {
-                    console.log('Unable to get permission to notify.');
-                    alert('እባክዎን ማሳወቂያ እንዲደርስዎ ፈቃድ ይስጡ::');
-                }
-            } catch (err) {
-                console.log('An error occurred while retrieving token. ', err);
-                alert('የድምፅ ማሳወቂያ ስህተት አጋጥሟል! (ክሮም ወይም ሳፋሪ ይጠቀሙ)');
-            }
-        }
-
-        onMessage(messaging, (payload) => {
-            console.log('Message received. ', payload);
-            if (payload.notification) {
                 if ('vibrate' in navigator) {
                     navigator.vibrate([200, 100, 200]);
                 }
                 const audio = new Audio('https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg');
                 audio.play().catch(e => console.log('Audio play failed:', e));
+                alert('የድምፅ ማንቂያው በትክክል ተፈትኗል!');
+            } catch (err) {
+                console.log('Audio notification error: ', err);
+                alert('ድምፅ ማጫወት አልተቻለም።');
             }
-        });
+        }
     </script>
 
     <!-- የድሮው (Compat) Firebase SDK እና የUI ሎጂክ -->
