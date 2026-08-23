@@ -124,9 +124,35 @@
             width: 105px;
             text-align: center;
         }
+
+        /* Modal Background completely transparent, only the box has gradient */
+        .custom-modal-bg { background: transparent; pointer-events: none; }
+        .custom-modal-box {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.95) 0%, rgba(16, 185, 129, 0.95) 100%);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(16, 185, 129, 0.3);
+            pointer-events: auto;
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen pb-20">
+
+    <!-- Custom Popup Modal Container (Transparent background so tasks behind remain 100% clear) -->
+    <div id="custom-modal" class="fixed inset-0 z-[100] custom-modal-bg flex items-center justify-center p-4 hidden">
+        <div class="custom-modal-box w-full max-w-sm rounded-3xl overflow-hidden animate-[slideUp_0.3s_ease-out] text-slate-950 p-6 text-center">
+            <div class="w-14 h-14 rounded-2xl bg-slate-950/15 border border-white/20 flex items-center justify-center mx-auto mb-3 shadow-inner">
+                <i id="custom-modal-icon" class="fa-solid fa-triangle-exclamation text-slate-950 text-2xl"></i>
+            </div>
+            <h3 id="custom-modal-title" class="text-lg font-extrabold text-slate-950 mb-2 tracking-wide">ማረጋገጫ</h3>
+            <p id="custom-modal-message" class="text-xs font-semibold text-slate-900 mb-6 leading-relaxed px-2">ይህን ተግባር መፈጸም ይፈልጋሉ?</p>
+            <div id="custom-modal-actions" class="flex gap-3 justify-center">
+                <button id="custom-modal-cancel" class="flex-1 bg-slate-900/30 hover:bg-slate-900/50 text-slate-950 font-bold text-xs py-3 px-4 rounded-xl border border-white/20 transition active:scale-95 shadow-sm">ሰርዝ</button>
+                <button id="custom-modal-confirm" class="flex-1 bg-slate-950 hover:bg-slate-900 text-amber-400 font-extrabold text-xs py-3 px-4 rounded-xl transition shadow-xl active:scale-95">እሺ</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Header -->
     <header class="glass-header border-b border-slate-800 sticky top-0 z-50">
@@ -235,11 +261,11 @@
 
         <!-- Footer -->
         <div class="mt-8 text-center pb-4">
-            <p class="text-[10px] text-slate-600">Multi-Device Task Controller v2.7 (Exact Point Display without Rounding)</p>
+            <p class="text-[10px] text-slate-600">Multi-Device Task Controller v2.9</p>
         </div>
     </main>
 
-    <!-- Sound & Notification Handler -->
+    <!-- Sound & Custom Modal Handler -->
     <script>
         window.requestNotificationPermission = function() {
             try {
@@ -248,11 +274,61 @@
                 }
                 const audio = new Audio('https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg');
                 audio.play().catch(e => console.log('Audio play failed:', e));
-                alert('Audio alert tested successfully!');
+                showCustomAlert('ድምፅ ማስተካከል', 'Audio alert tested successfully!');
             } catch (err) {
                 console.log('Audio notification error: ', err);
-                alert('Could not play audio.');
+                showCustomAlert('ስህተት', 'Could not play audio.');
             }
+        };
+
+        // Custom Modal Function to replace standard alert/confirm
+        function showCustomConfirm(title, message, onConfirm) {
+            const modal = document.getElementById('custom-modal');
+            const titleEl = document.getElementById('custom-modal-title');
+            const msgEl = document.getElementById('custom-modal-message');
+            const confirmBtn = document.getElementById('custom-modal-confirm');
+            const cancelBtn = document.getElementById('custom-modal-cancel');
+
+            titleEl.innerText = title;
+            msgEl.innerText = message;
+            modal.classList.remove('hidden');
+
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            const newCancelBtn = cancelBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+            newConfirmBtn.addEventListener('click', () => {
+                modal.classList.add('hidden');
+                if (onConfirm) onConfirm(true);
+            });
+
+            newCancelBtn.addEventListener('click', () => {
+                modal.classList.add('hidden');
+                if (onConfirm) onConfirm(false);
+            });
+        }
+
+        function showCustomAlert(title, message) {
+            const modal = document.getElementById('custom-modal');
+            const titleEl = document.getElementById('custom-modal-title');
+            const msgEl = document.getElementById('custom-modal-message');
+            const confirmBtn = document.getElementById('custom-modal-confirm');
+            const cancelBtn = document.getElementById('custom-modal-cancel');
+
+            titleEl.innerText = title;
+            msgEl.innerText = message;
+            cancelBtn.style.display = 'none'; // Hide cancel button for simple alerts
+            confirmBtn.innerText = 'እሺ';
+            modal.classList.remove('hidden');
+
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+            newConfirmBtn.addEventListener('click', () => {
+                modal.classList.add('hidden');
+                cancelBtn.style.display = 'block'; // Restore cancel button
+            });
         }
     </script>
 
@@ -379,7 +455,7 @@
                 if (isEditing) {
                     pointsDisplayHtml = '<input type="number" id="' + accId + '_input" value="' + stats.earnedPoints + '" class="point-input" step="any" min="0">';
                 } else {
-                    pointsDisplayHtml = '<strong class="text-yellow-400 font-bold">' + stats.earnedFormatted + '</strong>';
+                    pointsDisplayHtml = '<strong class="text-amber-400 font-extrabold">' + stats.earnedFormatted + '</strong>';
                 }
 
                 let actionButtonHtml = '';
@@ -390,12 +466,12 @@
                 }
 
                 statsContainer.innerHTML = 
-                    '<div class="flex justify-between items-center text-slate-300 font-medium">' +
+                    '<div class="flex justify-between items-center text-slate-200 font-semibold">' +
                         '<span><i class="fa-regular fa-calendar-check text-amber-400 mr-1"></i>Days: <strong class="text-amber-400 font-bold">' + stats.daysWorked + ' d</strong></span>' +
-                        '<span><i class="fa-solid fa-coins text-yellow-400 blink-icon mr-1"></i>Points: ' + pointsDisplayHtml + ' / ' + stats.targetFormatted + '</span>' +
+                        '<span><i class="fa-solid fa-coins text-yellow-400 blink-icon mr-1"></i>Points: ' + pointsDisplayHtml + ' / <span class="text-slate-300 font-bold">' + stats.targetFormatted + '</span></span>' +
                     '</div>' +
-                    '<div class="flex justify-between items-center text-slate-400 mt-1 flex-wrap gap-1">' +
-                        '<span class="text-emerald-400 font-semibold"><i class="fa-solid fa-hourglass-start mr-1"></i>Days Left: ' + stats.remainingDays + '</span>' +
+                    '<div class="flex justify-between items-center text-slate-300 mt-1 flex-wrap gap-1">' +
+                        '<span class="text-emerald-400 font-bold"><i class="fa-solid fa-hourglass-start mr-1"></i>Days Left: ' + stats.remainingDays + '</span>' +
                         '<div class="flex items-center gap-1 ml-auto">' +
                             actionButtonHtml +
                             '<button onclick="resetAccountDays(\'' + accId + '\', \'' + appType + '\')" class="btn-day-adjust btn-day-reset" title="Reset Account"><i class="fa-solid fa-rotate-left text-[9px]"></i> Reset</button>' +
@@ -405,11 +481,12 @@
         }
 
         window.toggleEditPoints = function(accId, appType) {
-            const confirmMsg = "⚠️ ማስጠንቀቂያ\n\nየዚህን አካውንት ፖይንት በቀጥታ ማስተካከል ይፈልጋሉ?";
-            if (confirm(confirmMsg)) {
-                editingStates[accId] = true;
-                refreshSingleTrackerUI(accId, appType);
-            }
+            showCustomConfirm('ማስተካከል', 'የዚህን አካውንት ፖይንት ማስተካከል ይፈልጋሉ?', (confirmed) => {
+                if (confirmed) {
+                    editingStates[accId] = true;
+                    refreshSingleTrackerUI(accId, appType);
+                }
+            });
         }
 
         window.saveAccountPoints = function(accId, appType) {
@@ -417,7 +494,7 @@
             if (inputElem) {
                 let newPoints = parseFloat(inputElem.value);
                 if (isNaN(newPoints) || newPoints < 0) {
-                    alert('እባክዎ ትክክለኛ የፖይንት ቁጥር ያስገቡ!');
+                    showCustomAlert('ስህተት', 'እባክዎ ትክክለኛ የፖይንት ቁጥር ያስገቡ!');
                     return;
                 }
                 
@@ -425,26 +502,28 @@
                 let exactPoints = newPoints;
                 let calculatedDays = Math.floor(exactPoints / rule.daily);
 
-                const confirmMsg = "💾 ማረጋገጫ\n\nየተገባው ፖይንት (" + exactPoints + " pts) እና የሚሰላው ቀን (" + calculatedDays + " ቀን) በትክክል ይቀመጥ?";
-                if (confirm(confirmMsg)) {
-                    daysCache[accId] = exactPoints;
-                    localStorage.setItem(accId + '_earned_points', exactPoints);
-                    daysRef.child(accId).set(exactPoints);
-                    editingStates[accId] = false;
-                    refreshSingleTrackerUI(accId, appType);
-                }
+                showCustomConfirm('ማስቀመጥ', 'የተገባው ፖይንት (' + exactPoints + ' pts) እና ቀን (' + calculatedDays + ' ቀን) ይቀመጥ?', (confirmed) => {
+                    if (confirmed) {
+                        daysCache[accId] = exactPoints;
+                        localStorage.setItem(accId + '_earned_points', exactPoints);
+                        daysRef.child(accId).set(exactPoints);
+                        editingStates[accId] = false;
+                        refreshSingleTrackerUI(accId, appType);
+                    }
+                });
             }
         }
 
         window.resetAccountDays = function(accId, appType) {
-            const confirmMsg = "🚨 ማስጠንቀቂያ!\n\nየዚህን አካውንት ፖይንት እና ቀን ሙሉ በሙሉ ወደ 0 መመለስ ይፈልጋሉ?";
-            if (confirm(confirmMsg)) {
-                editingStates[accId] = false;
-                daysCache[accId] = 0;
-                localStorage.setItem(accId + '_earned_points', 0);
-                daysRef.child(accId).set(0);
-                refreshSingleTrackerUI(accId, appType);
-            }
+            showCustomConfirm('መደለዝ', 'የዚህን አካውንት ፖይንት እና ቀን ወደ 0 መመለስ ይፈልጋሉ?', (confirmed) => {
+                if (confirmed) {
+                    editingStates[accId] = false;
+                    daysCache[accId] = 0;
+                    localStorage.setItem(accId + '_earned_points', 0);
+                    daysRef.child(accId).set(0);
+                    refreshSingleTrackerUI(accId, appType);
+                }
+            });
         }
 
         function toEthiopianDate(date) {
@@ -598,13 +677,13 @@
 
         function createTrackerBadgeHtml(accId, appType) {
             const stats = getAccountStats(accId, appType);
-            return '<div id="' + accId + '_stats" class="hidden my-2 p-2.5 bg-slate-900/90 rounded-xl border border-slate-700/70 text-[10px] space-y-1.5 shadow-inner">' +
-                '<div class="flex justify-between items-center text-slate-300 font-medium">' +
+            return '<div id="' + accId + '_stats" class="hidden my-2 p-2.5 bg-slate-900/95 rounded-xl border border-slate-700 text-[10px] space-y-1.5 shadow-inner">' +
+                '<div class="flex justify-between items-center text-slate-200 font-medium">' +
                     '<span><i class="fa-regular fa-calendar-check text-amber-400 mr-1"></i>Days: <strong class="text-amber-400 font-bold">' + stats.daysWorked + ' d</strong></span>' +
-                    '<span><i class="fa-solid fa-coins text-yellow-400 blink-icon mr-1"></i>Points: <strong class="text-yellow-400 font-bold">' + stats.earnedFormatted + '</strong> / ' + stats.targetFormatted + '</span>' +
+                    '<span><i class="fa-solid fa-coins text-yellow-400 blink-icon mr-1"></i>Points: <strong class="text-amber-400 font-extrabold">' + stats.earnedFormatted + '</strong> / <span class="text-slate-300 font-bold">' + stats.targetFormatted + '</span></span>' +
                 '</div>' +
-                '<div class="flex justify-between items-center text-slate-400 mt-1 flex-wrap gap-1">' +
-                    '<span class="text-emerald-400 font-semibold"><i class="fa-solid fa-hourglass-start mr-1"></i>Days Left: ' + stats.remainingDays + '</span>' +
+                '<div class="flex justify-between items-center text-slate-300 mt-1 flex-wrap gap-1">' +
+                    '<span class="text-emerald-400 font-bold"><i class="fa-solid fa-hourglass-start mr-1"></i>Days Left: ' + stats.remainingDays + '</span>' +
                     '<div class="flex items-center gap-1 ml-auto">' +
                         '<button onclick="toggleEditPoints(\'' + accId + '\', \'' + appType + '\')" class="btn-day-adjust btn-day-edit" title="Edit Points"><i class="fa-solid fa-pen-to-square text-[10px]"></i> Edit</button>' +
                         '<button onclick="resetAccountDays(\'' + accId + '\', \'' + appType + '\')" class="btn-day-adjust btn-day-reset" title="Reset Account"><i class="fa-solid fa-rotate-left text-[9px]"></i> Reset</button>' +
@@ -765,50 +844,21 @@
                 cb.addEventListener('change', function() {
                     const type = this.getAttribute('data-type');
                     const prefix = this.getAttribute('data-prefix');
+                    const checkboxElem = this;
 
-                    if (!this.checked) {
-                        const appName = getAppNameFromId(this.id);
-                        const lines = [
-                            "⚠️ ማስጠንቀቂያ",
-                            "",
-                            '"' + appName + '" ማጥፋት (uncheck ማድረግ) ይፈልጋሉ?',
-                            "",
-                            "እርግጠኛ ነዎት?"
-                        ];
-                        const confirmed = confirm(lines.join("\n"));
-                        if (!confirmed) {
-                            this.checked = true;
-                            return;
-                        }
-                    }
-
-                    if (type === 'master') {
-                        const live = document.getElementById(prefix + '_live');
-                        const party = document.getElementById(prefix + '_party');
-                        if (live && party) {
-                            live.checked = this.checked;
-                            party.checked = this.checked;
-                        }
-                        updateAccountPointsIncrement(prefix, 'poppo', this.checked);
-                    } else if (type === 'sub') {
-                        const master = document.getElementById(prefix + '_master');
-                        const live = document.getElementById(prefix + '_live');
-                        const party = document.getElementById(prefix + '_party');
-                        if (master && live && party) {
-                            const bothChecked = (live.checked && party.checked);
-                            if (master.checked !== bothChecked) {
-                                master.checked = bothChecked;
-                                updateAccountPointsIncrement(prefix, 'poppo', bothChecked);
+                    if (!checkboxElem.checked) {
+                        const appName = getAppNameFromId(checkboxElem.id);
+                        showCustomConfirm('ማረጋገጫ', '"' + appName + '" ማጥፋት ይፈልጋሉ?', (confirmed) => {
+                            if (!confirmed) {
+                                checkboxElem.checked = true;
+                                return;
+                            } else {
+                                processCheckboxChange(checkboxElem, type, prefix);
                             }
-                        }
-                    } else if (type === 'standalone') {
-                        const accId = this.getAttribute('data-acc');
-                        const appType = this.getAttribute('data-app');
-                        if (accId && appType) {
-                            updateAccountPointsIncrement(accId, appType, this.checked);
-                        }
+                        });
+                    } else {
+                        processCheckboxChange(checkboxElem, type, prefix);
                     }
-                    syncProgressToFirebase();
                 });
             });
 
@@ -819,10 +869,42 @@
             });
             
             document.getElementById('reset-btn').addEventListener('click', function() {
-                if (confirm("የዛሬውን ምልክቶች (ticks) ብቻ ማጥፋት ይፈልጋሉ? የፖይንት እና የቀን ሪኮርድዎ ይቀመጠል።")) {
-                    autoResetTasks();
-                }
+                showCustomConfirm('ማረጋገጫ', 'የዛሬውን ምልክቶች ብቻ ማጥፋት ይፈልጋሉ?', (confirmed) => {
+                    if (confirmed) {
+                        autoResetTasks();
+                    }
+                });
             });
+        }
+
+        function processCheckboxChange(checkboxElem, type, prefix) {
+            if (type === 'master') {
+                const live = document.getElementById(prefix + '_live');
+                const party = document.getElementById(prefix + '_party');
+                if (live && party) {
+                    live.checked = checkboxElem.checked;
+                    party.checked = checkboxElem.checked;
+                }
+                updateAccountPointsIncrement(prefix, 'poppo', checkboxElem.checked);
+            } else if (type === 'sub') {
+                const master = document.getElementById(prefix + '_master');
+                const live = document.getElementById(prefix + '_live');
+                const party = document.getElementById(prefix + '_party');
+                if (master && live && party) {
+                    const bothChecked = (live.checked && party.checked);
+                    if (master.checked !== bothChecked) {
+                        master.checked = bothChecked;
+                        updateAccountPointsIncrement(prefix, 'poppo', bothChecked);
+                    }
+                }
+            } else if (type === 'standalone') {
+                const accId = checkboxElem.getAttribute('data-acc');
+                const appType = checkboxElem.getAttribute('data-app');
+                if (accId && appType) {
+                    updateAccountPointsIncrement(accId, appType, checkboxElem.checked);
+                }
+            }
+            syncProgressToFirebase();
         }
 
         function syncProgressToFirebase() {
