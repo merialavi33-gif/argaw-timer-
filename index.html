@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>የስልክና አካውንት ታስክ መቆጣጠሪያ</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .device-card {
+            animation: slideUp 0.5s ease-out forwards;
+            opacity: 0;
+        }
+        .device-card:nth-child(1) { animation-delay: 0.05s; }
+        .device-card:nth-child(2) { animation-delay: 0.1s; }
+        .device-card:nth-child(3) { animation-delay: 0.15s; }
+        .device-card:nth-child(4) { animation-delay: 0.2s; }
+        .device-card:nth-child(5) { animation-delay: 0.25s; }
+        .device-card:nth-child(6) { animation-delay: 0.3s; }
+
+        .phone-title { font-size: 1.15rem; font-weight: 800; letter-spacing: 0.02em; }
+        .task-label { font-weight: 600; font-size: 0.9rem; line-height: 1.4; }
+        .sub-task-label { font-weight: 500; font-size: 0.82rem; }
+        .app-header { font-weight: 700; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; }
+
+        .checkbox-custom { width: 1.25rem; height: 1.25rem; accent-color: #10b981; cursor: pointer; flex-shrink: 0; }
+        .checkbox-custom.sub { width: 1.1rem; height: 1.1rem; }
+        .checkbox-custom:checked + label { text-decoration: line-through; color: #10b981; font-weight: 700; transition: all 0.3s ease; }
+
+        .device-progress-bg { background: linear-gradient(90deg, #1e293b 0%, #334155 100%); }
+        .device-progress-fill { background: linear-gradient(90deg, #f59e0b 0%, #10b981 100%); transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        .glass-header { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .stat-card { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 1px solid rgba(51, 65, 85, 0.5); }
+
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+        }
+        .completed-badge { animation: pulse-green 2s infinite; }
+
+        .toggle-btn i { transition: transform 0.3s ease; }
+        .toggle-btn.open i { transform: rotate(180deg); }
+
+        /* የቀን view/hide በተን መጠን ትልቅ እንዲሆን የተስተካከለ */
+        .btn-view-tracker {
+            padding: 6px 10px;
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            border-radius: 8px;
+            font-size: 1rem;
+            color: #f59e0b;
+            transition: all 0.2s ease;
+        }
+        .btn-view-tracker:active { transform: scale(0.9); }
+
+        .task-row { transition: all 0.2s ease; }
+        .task-row:hover { background: rgba(30, 41, 59, 0.8); border-color: rgba(71, 85, 105, 0.6); }
+
+        canvas { position: fixed !important; top: 0; left: 0; pointer-events: none; z-index: 9999; }
+        .countdown-box { box-shadow: 0 0 15px rgba(245, 158, 11, 0.15); }
+
+        /* ጎላ ያሉ የቀን ማስተካከያና Reset በተኖች */
+        .btn-day-adjust {
+            font-weight: 700;
+            font-size: 0.72rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .btn-day-plus {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: #ffffff;
+            border: 1px solid #34d399;
+        }
+        .btn-day-plus:active { transform: scale(0.92); }
+        .btn-day-minus {
+            background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+            color: #ffffff;
+            border: 1px solid #fbbf24;
+        }
+        .btn-day-minus:active { transform: scale(0.92); }
+        .btn-day-reset {
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            color: #ffffff;
+            border: 1px solid #f87171;
+        }
+        .btn-day-reset:active { transform: scale(0.92); }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen pb-20">
+
+    <!-- Header -->
+    <header class="glass-header border-b border-slate-800 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                    <i class="fa-solid fa-mobile-screen text-slate-950 text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-base md:text-lg font-bold text-amber-400 leading-tight">የስልኮችና ታስክ መቆጣጠሪያ</h1>
+                    <p id="ethiopian-date-display" class="text-[11px] text-emerald-400 font-semibold mt-0.5">
+                        <i class="fa-regular fa-calendar-days mr-1"></i> በመጫን ላይ...
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="countdown-box bg-slate-800/80 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                    <i class="fa-regular fa-clock text-amber-400 text-xs"></i>
+                    <span id="countdown-timer" class="text-sm font-mono font-bold text-amber-400 tracking-wider">00:00:00</span>
+                </div>
+                <button id="notify-btn" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all shadow-lg shadow-amber-500/20">
+                    <i class="fa-solid fa-bell"></i> <span class="hidden sm:inline">ድምፅ</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 mt-5">
+
+        <!-- Congrats Banner -->
+        <div id="congrats-banner" class="hidden bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/50 text-emerald-300 p-4 rounded-2xl mb-5 text-center shadow-lg shadow-emerald-500/10">
+            <h2 class="text-base font-bold flex items-center justify-center gap-2">
+                <span class="text-xl">🎉</span> እንኳን ደስ አለዎት! የዛሬ ታስኮች በሙሉ ተጠናቀዋል!
+            </h2>
+        </div>
+
+        <!-- Top Stats Row -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+            <div class="stat-card rounded-xl p-3 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center flex-shrink-0">
+                    <i class="fa-solid fa-list-check text-amber-400"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">ጠቅላላ ታስኮች</p>
+                    <p id="stat-total" class="text-xl font-extrabold text-slate-100">0</p>
+                </div>
+            </div>
+            <div class="stat-card rounded-xl p-3 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                    <i class="fa-solid fa-check-circle text-emerald-400"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">የተጠናቀቁ</p>
+                    <p id="stat-done" class="text-xl font-extrabold text-emerald-400">0</p>
+                </div>
+            </div>
+            <div class="stat-card rounded-xl p-3 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center flex-shrink-0">
+                    <i class="fa-solid fa-hourglass-half text-rose-400"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">የቀሩ ታስኮች</p>
+                    <p id="stat-remaining" class="text-xl font-extrabold text-rose-400">0</p>
+                </div>
+            </div>
+            <div class="stat-card rounded-xl p-3 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+                    <i class="fa-solid fa-mobile-screen-button text-blue-400"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">የተጠናቀቁ ስልኮች</p>
+                    <p id="stat-phones-done" class="text-xl font-extrabold text-blue-400">0/6</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overall Progress -->
+        <section class="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/50 rounded-2xl p-5 mb-6 shadow-xl">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                <div>
+                    <h2 class="text-base font-bold text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-pie text-amber-400"></i> የዛሬው የሥራ አፈጻጸም ደረጃ
+                    </h2>
+                    <p class="text-[11px] text-slate-400 mt-0.5">የተከፋፈሉ የሰዓት ታስኮች በሙሉ ይቆጣጠሩ (6 ስልኮች)</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button id="reset-btn" class="text-[11px] bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 px-3 py-1.5 rounded-lg transition-all active:scale-95">
+                        <i class="fa-solid fa-rotate-left mr-1"></i>የዛሬን ዳግም አስጀምር
+                    </button>
+                    <div class="text-right">
+                        <span id="progress-text" class="text-3xl font-extrabold text-emerald-400">0%</span>
+                        <span class="text-[10px] text-slate-400 block">የተጠናቀቀ</span>
+                    </div>
+                </div>
+            </div>
+            <div class="w-full bg-slate-800 h-5 rounded-full overflow-hidden p-0.5 shadow-inner">
+                <div id="progress-bar" class="bg-gradient-to-r from-amber-500 via-yellow-400 to-emerald-500 h-full rounded-full transition-all duration-700 relative" style="width: 0%">
+                    <div class="absolute inset-0 bg-white/20 rounded-full" style="background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Devices Grid -->
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="devices-container">
+        </section>
+
+        <!-- Footer -->
+        <div class="mt-8 text-center pb-4">
+            <p class="text-[10px] text-slate-600">የስልክና አካውንት ታስክ መቆጣጠሪያ v2.1</p>
+        </div>
+    </main>
+
+    <script>
+        const appRules = {
+            poppo: { daily: 2800, target: 100000, maxDays: 36 },
+            tello: { daily: 10000, target: 1000000, maxDays: 100 },
+            kaya:  { daily: 1000, target: 100000, maxDays: 100 },
+            yago:  { daily: 1200, target: 100000, maxDays: 84 }
+        };
+
+        /* በትክክለኛ የአካውንት ስሞች የተስተካከለው ዳታ */
+        const devicesData = [
+            {
+                id: "pro", name: "Phone Pro", badge: "Pro", color: "from-blue-500 to-cyan-500",
+                poppo: [{ id: "pro_poppo_1", name: "Poppo (pro)", type: "poppo" }],
+                tello: [
+                    { id: "pro_tello_1", name: "Tello (pro) - Party (2 ሰዓት)", type: "tello" },
+                    { id: "pro_tello_2", name: "Tello (kalkidan) - Party (2 ሰዓት)", type: "tello" }
+                ],
+                kaya: [], yago: []
+            },
+            {
+                id: "nova", name: "Phone Nova", badge: "Nova", color: "from-purple-500 to-pink-500",
+                poppo: [{ id: "nova_poppo_1", name: "Poppo (nova)", type: "poppo" }],
+                tello: [
+                    { id: "nova_tello_1", name: "Tello (neli) - Party (2 ሰዓት)", type: "tello" },
+                    { id: "nova_tello_2", name: "Tello (bruksol) - Party (2 ሰዓት)", type: "tello" }
+                ],
+                kaya: [{ id: "nova_kaya_1", name: "Kaya (abigia) - Party (2 ሰዓት)", type: "kaya" }],
+                yago: []
+            },
+            {
+                id: "eh", name: "Phone EH", badge: "EH", color: "from-orange-500 to-red-500",
+                poppo: [{ id: "eh_poppo_1", name: "Poppo (lavish esha)", type: "poppo" }],
+                tello: [
+                    { id: "eh_tello_1", name: "Tello (eftah) - Party (2 ሰዓት)", type: "tello" },
+                    { id: "eh_tello_2", name: "Tello (abush) - Party (2 ሰዓት)", type: "tello" },
+                    { id: "eh_tello_3", name: "Tello (tedi) - Party (2 ሰዓት)", type: "tello" }
+                ],
+                kaya: [{ id: "eh_kaya_1", name: "Kaya (kayakal) - Party (2 ሰዓት)", type: "kaya" }],
+                yago: []
+            },
+            {
+                id: "yab", name: "Phone Yab", badge: "Yab", color: "from-emerald-500 to-teal-500",
+                poppo: [{ id: "yab_poppo_1", name: "Poppo (yab)", type: "poppo" }],
+                tello: [
+                    { id: "yab_tello_1", name: "Tello (afi man) - Party (2 ሰዓት)", type: "tello" },
+                    { id: "yab_tello_2", name: "Tello (ኤማንዳ) - Party (2 ሰዓት)", type: "tello" },
+                    { id: "yab_tello_3", name: "Tello (neli jak) - Party (2 ሰዓት)", type: "tello" }
+                ],
+                kaya: [],
+                yago: [{ id: "yab_yago_1", name: "Yago (agb man) - Party (1 ሰዓት)", type: "yago" }]
+            },
+            {
+                id: "zte", name: "Phone ZTE", badge: "ZTE", color: "from-indigo-500 to-violet-500",
+                poppo: [{ id: "zte_poppo_1", name: "Poppo (hiri mon)", type: "poppo" }],
+                tello: [{ id: "zte_tello_1", name: "Tello (tsi1229) - Party (2 ሰዓት)", type: "tello" }],
+                kaya: [{ id: "zte_kaya_1", name: "Kaya (gigi.m) - Party (2 ሰዓት)", type: "kaya" }],
+                yago: []
+            },
+            {
+                id: "readspark", name: "Phone Read Spark", badge: "Read Spark", color: "from-rose-500 to-pink-500",
+                poppo: [{ id: "readspark_poppo_1", name: "Poppo (neli jack)", type: "poppo" }],
+                tello: [{ id: "readspark_tello_1", name: "Tello (maria lavi) - Party (2 ሰዓት)", type: "tello" }],
+                kaya: [{ id: "readspark_kaya_1", name: "Kaya (mama) - Party (2 ሰዓት)", type: "kaya" }],
+                yago: []
+            }
+        ];
+
+        let celebrated = false;
+
+        function getAccountStats(accId, appType) {
+            let daysWorked = parseInt(localStorage.getItem(accId + '_days_worked') || '0');
+            const rule = appRules[appType];
+            const earnedPoints = daysWorked * rule.daily;
+            const remainingPoints = Math.max(0, rule.target - earnedPoints);
+            const remainingDays = Math.ceil(remainingPoints / rule.daily);
+
+            return { daysWorked, earnedPoints, remainingDays, target: rule.target };
+        }
+
+        function refreshSingleTrackerUI(accId, appType) {
+            const statsContainer = document.getElementById(accId + '_stats');
+            if (statsContainer) {
+                const stats = getAccountStats(accId, appType);
+                statsContainer.innerHTML = 
+                    '<div class="flex justify-between items-center text-slate-300 font-medium">' +
+                        '<span><i class="fa-regular fa-calendar-check text-amber-400 mr-1"></i>የተሰራው፡ <strong class="text-amber-400 font-bold">' + stats.daysWorked + ' ቀን</strong></span>' +
+                        '<span><i class="fa-solid fa-coins text-yellow-400 mr-1"></i>' + stats.earnedPoints.toLocaleString() + ' / ' + stats.target.toLocaleString() + '</span>' +
+                    '</div>' +
+                    '<div class="flex justify-between items-center text-slate-400 mt-1 flex-wrap gap-1">' +
+                        '<span class="text-emerald-400 font-semibold"><i class="fa-solid fa-hourglass-start mr-1"></i>ለመቀየር የቀረው፡ ' + stats.remainingDays + ' ቀን</span>' +
+                        '<div class="flex items-center gap-1 ml-auto">' +
+                            '<button onclick="manualAdjustDays(\'' + accId + '\', \'' + appType + '\', false)" class="btn-day-adjust btn-day-minus"><i class="fa-solid fa-minus text-[9px]"></i> 1</button>' +
+                            '<button onclick="manualAdjustDays(\'' + accId + '\', \'' + appType + '\', true)" class="btn-day-adjust btn-day-plus"><i class="fa-solid fa-plus text-[9px]"></i> 1</button>' +
+                            '<button onclick="resetAccountDays(\'' + accId + '\', \'' + appType + '\')" class="btn-day-adjust btn-day-reset"><i class="fa-solid fa-rotate-left text-[9px]"></i> Reset</button>' +
+                        '</div>' +
+                    '</div>';
+            }
+        }
+
+        function updateAccountDays(accId, appType, increment) {
+            let days = parseInt(localStorage.getItem(accId + '_days_worked') || '0');
+            const rule = appRules[appType];
+            if (increment) {
+                days++;
+            } else {
+                if (days > 0) days--;
+            }
+            localStorage.setItem(accId + '_days_worked', days);
+            refreshSingleTrackerUI(accId, appType);
+        }
+
+        function manualAdjustDays(accId, appType, increment) {
+            const actionText = increment ? "ለመጨመር" : "ለመቀነስ";
+            const confirmMsg = "⚠️ ማስጠንቀቂያ\n\nየአካውንቱን የቀን/ነጥብ መቁጠሪያ 1 ቀን " + actionText + " እርግጠኛ ነዎት?";
+            
+            if (confirm(confirmMsg)) {
+                updateAccountDays(accId, appType, increment);
+            }
+        }
+
+        function resetAccountDays(accId, appType) {
+            const confirmMsg = "🚨 አደገኛ ማስጠንቀቂያ!\n\nይህንን አካውንት በአንድ ጊዜ ወደ 0 ቀን እና 0 ነጥብ ዳግም ማስጀመር (Reset) ይፈልጋሉ?";
+            if (confirm(confirmMsg)) {
+                localStorage.setItem(accId + '_days_worked', 0);
+                refreshSingleTrackerUI(accId, appType);
+            }
+        }
+
+        function toEthiopianDate(date) {
+            const days = ["እሑድ", "ሰኞ", "ማክሰኞ", "ረቡዕ", "ሐሙስ", "ዓርብ", "ቅዳሜ"];
+            const ethMonths = ["መስከረም", "ጥቅምት", "ሕዳር", "ታኅሣሥ", "ጥር", "የካቲት", "መጋቢት", "ሚያዝያ", "ግንቦት", "ሰኔ", "ሐምሌ", "ነሐሴ", "ጳጉሜ"];
+            const dayName = days[date.getDay()];
+            const year = date.getFullYear();
+            let ethYear = year - 8;
+            let newYearDay = ((ethYear + 1) % 4 === 0) ? 12 : 11;
+            let ethMonth, ethDay;
+            const gDayCount = Math.floor((date - new Date(year, 0, 1)) / (1000 * 60 * 60 * 24)) + 1;
+            const ethNewYearGCount = Math.floor((new Date(year, 8, newYearDay) - new Date(year, 0, 1)) / (1000 * 60 * 60 * 24)) + 1;
+            if (gDayCount >= ethNewYearGCount) {
+                ethYear = year - 7;
+                let diff = gDayCount - ethNewYearGCount;
+                ethMonth = Math.floor(diff / 30);
+                ethDay = (diff % 30) + 1;
+            } else {
+                let prevNewYearDay = (ethYear % 4 === 0) ? 12 : 11;
+                let prevNewYear = new Date(year - 1, 8, prevNewYearDay);
+                let diff = Math.floor((date - prevNewYear) / (1000 * 60 * 60 * 24));
+                ethMonth = Math.floor(diff / 30);
+                ethDay = (diff % 30) + 1;
+            }
+            return dayName + "፣ " + ethMonths[ethMonth] + " " + ethDay + " ቀን " + ethYear + " ዓ.ም";
+        }
+
+        function updateClockAndCountdown() {
+            const now = new Date();
+            const dateElem = document.getElementById('ethiopian-date-display');
+            if (dateElem) {
+                dateElem.innerHTML = '<i class="fa-regular fa-calendar-days mr-1"></i>' + toEthiopianDate(now);
+            }
+            let targetTime = new Date();
+            targetTime.setHours(19, 0, 0, 0);
+            if (now >= targetTime) {
+                targetTime.setDate(targetTime.getDate() + 1);
+            }
+            let diff = targetTime - now;
+            let hours = Math.floor(diff / (1000 * 60 * 60));
+            let minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            let seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            const timerElem = document.getElementById('countdown-timer');
+            if (timerElem) {
+                timerElem.innerText = hours.toString().padStart(2, '0') + ":" + minutes.toString().padStart(2, '0') + ":" + seconds.toString().padStart(2, '0');
+            }
+            const currentHours = now.getHours();
+            const currentMinutes = now.getMinutes();
+            const currentSeconds = now.getSeconds();
+            const todayStr = now.toDateString();
+            const lastReset = localStorage.getItem('lastAutoResetDate');
+            if (currentHours === 19 && currentMinutes === 0 && currentSeconds === 0 && lastReset !== todayStr) {
+                autoResetTasks();
+                localStorage.setItem('lastAutoResetDate', todayStr);
+            }
+        }
+
+        function autoResetTasks() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                cb.checked = false;
+                cb.disabled = false;
+                localStorage.removeItem(cb.id);
+            });
+            updateProgress();
+        }
+
+        function requestNotificationPermission() {
+            if ('Notification' in window) {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        alert('የድምፅ ማሳወቂያው በትክክል ተፈቅዷል');
+                    } else {
+                        alert('እባክዎን ማሳወቂያ እንዲደርስዎ ፈቃድ ይስጡ');
+                    }
+                });
+            }
+        }
+
+        function playVictorySound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const notes = [261.63, 329.63, 392.00, 523.25];
+                notes.forEach((freq, index) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.frequency.value = freq;
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(ctx.currentTime + index * 0.12);
+                    osc.stop(ctx.currentTime + index * 0.12 + 0.2);
+                });
+            } catch(e) {}
+        }
+
+        function getAppNameFromId(id) {
+            if (id.indexOf('_master') !== -1) return 'Poppo ሙሉ ታስክ';
+            if (id.indexOf('_live') !== -1) return 'Poppo Live';
+            if (id.indexOf('_party') !== -1) return 'Poppo Party';
+            if (id.indexOf('tello') !== -1) return 'Tello';
+            if (id.indexOf('kaya') !== -1) return 'Kaya';
+            if (id.indexOf('yago') !== -1) return 'Yago';
+            return 'ይህ ታስክ';
+        }
+
+        function countDeviceTasks(dev) {
+            let count = 0;
+            dev.poppo.forEach(p => { count += 2; });
+            count += dev.tello.length;
+            count += dev.kaya.length;
+            count += dev.yago.length;
+            return count;
+        }
+
+        function getDeviceProgress(devId) {
+            const dev = devicesData.find(d => d.id === devId);
+            if (!dev) return { total: 0, done: 0 };
+            let total = 0, done = 0;
+            dev.poppo.forEach(p => {
+                total += 2;
+                if (document.getElementById(p.id + '_live') && document.getElementById(p.id + '_live').checked) done++;
+                if (document.getElementById(p.id + '_party') && document.getElementById(p.id + '_party').checked) done++;
+            });
+            dev.tello.forEach(t => {
+                total++;
+                const el = document.getElementById(t.id);
+                if (el && el.checked) done++;
+            });
+            dev.kaya.forEach(k => {
+                total++;
+                const el = document.getElementById(k.id);
+                if (el && el.checked) done++;
+            });
+            dev.yago.forEach(y => {
+                total++;
+                const el = document.getElementById(y.id);
+                if (el && el.checked) done++;
+            });
+            return { total, done };
+        }
+
+        function createTrackerBadgeHtml(accId, appType) {
+            const stats = getAccountStats(accId, appType);
+            return '<div id="' + accId + '_stats" class="hidden my-2 p-2.5 bg-slate-900/90 rounded-xl border border-slate-700/70 text-[10px] space-y-1.5 shadow-inner">' +
+                '<div class="flex justify-between items-center text-slate-300 font-medium">' +
+                    '<span><i class="fa-regular fa-calendar-check text-amber-400 mr-1"></i>የተሰራው፡ <strong class="text-amber-400 font-bold">' + stats.daysWorked + ' ቀን</strong></span>' +
+                    '<span><i class="fa-solid fa-coins text-yellow-400 mr-1"></i>' + stats.earnedPoints.toLocaleString() + ' / ' + stats.target.toLocaleString() + '</span>' +
+                '</div>' +
+                '<div class="flex justify-between items-center text-slate-400 mt-1 flex-wrap gap-1">' +
+                    '<span class="text-emerald-400 font-semibold"><i class="fa-solid fa-hourglass-start mr-1"></i>ለመቀየር የቀረው፡ ' + stats.remainingDays + ' ቀን</span>' +
+                    '<div class="flex items-center gap-1 ml-auto">' +
+                        '<button onclick="manualAdjustDays(\'' + accId + '\', \'' + appType + '\', false)" class="btn-day-adjust btn-day-minus"><i class="fa-solid fa-minus text-[9px]"></i> 1</button>' +
+                        '<button onclick="manualAdjustDays(\'' + accId + '\', \'' + appType + '\', true)" class="btn-day-adjust btn-day-plus"><i class="fa-solid fa-plus text-[9px]"></i> 1</button>' +
+                        '<button onclick="resetAccountDays(\'' + accId + '\', \'' + appType + '\')" class="btn-day-adjust btn-day-reset"><i class="fa-solid fa-rotate-left text-[9px]"></i> Reset</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+        }
+
+        function renderDashboard() {
+            const container = document.getElementById('devices-container');
+            if (!container) return;
+            let fullHtml = '';
+            devicesData.forEach((dev, idx) => {
+                const totalTasks = countDeviceTasks(dev);
+                fullHtml += '<div class="device-card bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/50 rounded-2xl p-4 shadow-lg hover:shadow-xl hover:border-slate-600/50 transition-all duration-300">' +
+                    '<div class="flex items-center justify-between mb-3">' +
+                        '<div class="flex items-center gap-3">' +
+                            '<div class="w-9 h-9 rounded-xl bg-gradient-to-br ' + dev.color + ' flex items-center justify-center shadow-lg flex-shrink-0">' +
+                                '<i class="fa-solid fa-mobile-button text-white text-sm"></i>' +
+                            '</div>' +
+                            '<div>' +
+                                '<h3 class="phone-title text-slate-100">' + (idx + 1) + '. ' + dev.name + '</h3>' +
+                                '<p class="text-[10px] text-slate-400">' + totalTasks + ' ታስኮች</p>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="flex items-center gap-2">' +
+                            '<span id="badge-' + dev.id + '" class="text-[10px] font-bold px-2 py-1 rounded-full bg-slate-700 text-slate-300 transition-all">በሂደት ላይ</span>' +
+                            '<span id="pct-' + dev.id + '" class="text-lg font-extrabold text-amber-400">0%</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="w-full device-progress-bg h-2 rounded-full overflow-hidden mb-4">' +
+                        '<div id="bar-' + dev.id + '" class="device-progress-fill h-full rounded-full" style="width: 0%"></div>' +
+                    '</div>' +
+                    '<div class="space-y-3">';
+
+                if (dev.poppo.length > 0) {
+                    fullHtml += '<div class="flex items-center gap-2 mb-1">' +
+                        '<i class="fa-solid fa-video text-rose-400 text-[10px]"></i>' +
+                        '<p class="app-header text-rose-400">Poppo Live <span class="text-slate-500">(' + dev.poppo.length + ')</span></p>' +
+                    '</div>';
+                    dev.poppo.forEach(p => {
+                        fullHtml += '<div class="bg-slate-800/60 rounded-xl border border-slate-700/50 overflow-hidden mb-2">' +
+                            '<div class="task-row flex items-center justify-between p-2.5 bg-slate-800/40">' +
+                                '<div class="flex items-center gap-2.5 min-w-0">' +
+                                    '<input type="checkbox" id="' + p.id + '_master" data-type="master" data-prefix="' + p.id + '" data-app="poppo" class="checkbox-custom w-5 h-5 accent-emerald-500 rounded cursor-pointer flex-shrink-0">' +
+                                    '<label for="' + p.id + '_master" class="task-label text-amber-300 cursor-pointer select-none truncate">' + p.name + '</label>' +
+                                '</div>' +
+                                '<div class="flex items-center gap-1.5 flex-shrink-0 ml-2">' +
+                                    '<button class="toggle-btn btn-view-tracker" data-target="' + p.id + '_stats" title="የነጥብና ቀን መቆጣጠሪያ">' +
+                                        '<i class="fa-solid fa-chart-line"></i>' +
+                                    '</button>' +
+                                    '<button class="toggle-btn text-slate-400 hover:text-white p-1 transition" data-target="' + p.id + '_details">' +
+                                        '<i class="fa-solid fa-chevron-down text-xs"></i>' +
+                                    '</button>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="px-2.5">' + createTrackerBadgeHtml(p.id, 'poppo') + '</div>' +
+                            '<div id="' + p.id + '_details" class="hidden p-2.5 border-t border-slate-700/30 space-y-2 bg-slate-900/30">' +
+                                '<div class="flex items-center gap-2.5 pl-1">' +
+                                    '<input type="checkbox" id="' + p.id + '_live" data-type="sub" data-prefix="' + p.id + '" class="checkbox-custom sub accent-emerald-500 rounded cursor-pointer flex-shrink-0">' +
+                                    '<label for="' + p.id + '_live" class="sub-task-label text-slate-300 cursor-pointer select-none">Live (1 ሰዓት)</label>' +
+                                '</div>' +
+                                '<div class="flex items-center gap-2.5 pl-1">' +
+                                    '<input type="checkbox" id="' + p.id + '_party" data-type="sub" data-prefix="' + p.id + '" class="checkbox-custom sub accent-emerald-500 rounded cursor-pointer flex-shrink-0">' +
+                                    '<label for="' + p.id + '_party" class="sub-task-label text-slate-300 cursor-pointer select-none">Party (1 ሰዓት)</label>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>';
+                    });
+                }
+
+                if (dev.tello.length > 0) {
+                    fullHtml += '<div class="flex items-center gap-2 mt-2 mb-1">' +
+                        '<i class="fa-solid fa-tower-broadcast text-blue-400 text-[10px]"></i>' +
+                        '<p class="app-header text-blue-400">Tello Live <span class="text-slate-500">(' + dev.tello.length + ')</span></p>' +
+                    '</div>';
+                    dev.tello.forEach(t => {
+                        fullHtml += '<div class="bg-slate-800/60 rounded-xl border border-slate-700/50 p-2.5 mb-2">' +
+                            '<div class="task-row flex items-center justify-between">' +
+                                '<div class="flex items-center gap-2.5 min-w-0">' +
+                                    '<input type="checkbox" id="' + t.id + '" data-type="standalone" data-acc="' + t.id + '" data-app="tello" class="checkbox-custom w-5 h-5 accent-emerald-500 rounded cursor-pointer flex-shrink-0">' +
+                                    '<label for="' + t.id + '" class="task-label text-slate-200 cursor-pointer select-none truncate">' + t.name + '</label>' +
+                                '</div>' +
+                                '<button class="toggle-btn btn-view-tracker flex-shrink-0 ml-2" data-target="' + t.id + '_stats" title="የነጥብና ቀን መቆጣጠሪያ">' +
+                                    '<i class="fa-solid fa-chart-line"></i>' +
+                                '</button>' +
+                            '</div>' +
+                            createTrackerBadgeHtml(t.id, 'tello') +
+                        '</div>';
+                    });
+                }
+
+                if (dev.kaya.length > 0) {
+                    fullHtml += '<div class="flex items-center gap-2 mt-2 mb-1">' +
+                        '<i class="fa-solid fa-star text-purple-400 text-[10px]"></i>' +
+                        '<p class="app-header text-purple-400">Kaya Live <span class="text-slate-500">(' + dev.kaya.length + ')</span></p>' +
+                    '</div>';
+                    dev.kaya.forEach(k => {
+                        fullHtml += '<div class="bg-slate-800/60 rounded-xl border border-slate-700/50 p-2.5 mb-2">' +
+                            '<div class="task-row flex items-center justify-between">' +
+                                '<div class="flex items-center gap-2.5 min-w-0">' +
+                                    '<input type="checkbox" id="' + k.id + '" data-type="standalone" data-acc="' + k.id + '" data-app="kaya" class="checkbox-custom w-5 h-5 accent-emerald-500 rounded cursor-pointer flex-shrink-0">' +
+                                    '<label for="' + k.id + '" class="task-label text-slate-200 cursor-pointer select-none truncate">' + k.name + '</label>' +
+                                '</div>' +
+                                '<button class="toggle-btn btn-view-tracker flex-shrink-0 ml-2" data-target="' + k.id + '_stats" title="የነጥብና ቀን መቆጣጠሪያ">' +
+                                    '<i class="fa-solid fa-chart-line"></i>' +
+                                '</button>' +
+                            '</div>' +
+                            createTrackerBadgeHtml(k.id, 'kaya') +
+                        '</div>';
+                    });
+                }
+
+                if (dev.yago.length > 0) {
+                    fullHtml += '<div class="flex items-center gap-2 mt-2 mb-1">' +
+                        '<i class="fa-solid fa-fire text-orange-400 text-[10px]"></i>' +
+                        '<p class="app-header text-orange-400">Yago Live <span class="text-slate-500">(' + dev.yago.length + ')</span></p>' +
+                    '</div>';
+                    dev.yago.forEach(y => {
+                        fullHtml += '<div class="bg-slate-800/60 rounded-xl border border-slate-700/50 p-2.5 mb-2">' +
+                            '<div class="task-row flex items-center justify-between">' +
+                                '<div class="flex items-center gap-2.5 min-w-0">' +
+                                    '<input type="checkbox" id="' + y.id + '" data-type="standalone" data-acc="' + y.id + '" data-app="yago" class="checkbox-custom w-5 h-5 accent-emerald-500 rounded cursor-pointer flex-shrink-0">' +
+                                    '<label for="' + y.id + '" class="task-label text-slate-200 cursor-pointer select-none truncate">' + y.name + '</label>' +
+                                '</div>' +
+                                '<button class="toggle-btn btn-view-tracker flex-shrink-0 ml-2" data-target="' + y.id + '_stats" title="የነጥብና ቀን መቆጣጠሪያ">' +
+                                    '<i class="fa-solid fa-chart-line"></i>' +
+                                '</button>' +
+                            '</div>' +
+                            createTrackerBadgeHtml(y.id, 'yago') +
+                        '</div>';
+                    });
+                }
+
+                fullHtml += '</div></div>';
+            });
+            container.innerHTML = fullHtml;
+        }
+
+        function setupEventListeners() {
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const targetId = this.getAttribute('data-target');
+                    const el = document.getElementById(targetId);
+                    if (el) {
+                        if (el.classList.contains('hidden')) {
+                            el.classList.remove('hidden');
+                            this.classList.add('open');
+                        } else {
+                            el.classList.add('hidden');
+                            this.classList.remove('open');
+                        }
+                    }
+                });
+            });
+
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                cb.addEventListener('change', function() {
+                    const type = this.getAttribute('data-type');
+                    const prefix = this.getAttribute('data-prefix');
+
+                    if (!this.checked) {
+                        const appName = getAppNameFromId(this.id);
+                        const lines = [
+                            "⚠️ ማስጠንቀቂያ",
+                            "",
+                            '"' + appName + '" ታስክን ለመሰረዝ እየሞከሩ ነው።',
+                            "",
+                            "እርግጠኛ ነዎት?"
+                        ];
+                        const confirmed = confirm(lines.join("\n"));
+                        if (!confirmed) {
+                            this.checked = true;
+                            return;
+                        }
+                    }
+
+                    if (type === 'master') {
+                        const live = document.getElementById(prefix + '_live');
+                        const party = document.getElementById(prefix + '_party');
+                        if (live && party) {
+                            live.checked = this.checked;
+                            party.checked = this.checked;
+                        }
+                        updateAccountDays(prefix, 'poppo', this.checked);
+                    } else if (type === 'sub') {
+                        const master = document.getElementById(prefix + '_master');
+                        const live = document.getElementById(prefix + '_live');
+                        const party = document.getElementById(prefix + '_party');
+                        if (master && live && party) {
+                            const bothChecked = (live.checked && party.checked);
+                            if (master.checked !== bothChecked) {
+                                master.checked = bothChecked;
+                                updateAccountDays(prefix, 'poppo', bothChecked);
+                            }
+                        }
+                    } else if (type === 'standalone') {
+                        const accId = this.getAttribute('data-acc');
+                        const appType = this.getAttribute('data-app');
+                        if (accId && appType) {
+                            updateAccountDays(accId, appType, this.checked);
+                        }
+                    }
+                    updateProgress();
+                });
+            });
+
+            document.getElementById('notify-btn').addEventListener('click', requestNotificationPermission);
+            document.getElementById('reset-btn').addEventListener('click', function() {
+                if (confirm('የዛሬ የታስክ ቲክ ምልክቶች ዳግም ይጀመራሉ። የቀንና የነጥብ መቁጠሪያው ግን አይጠፉም። እርግጠኛ ነዎት?')) {
+                    autoResetTasks();
+                }
+            });
+        }
+
+        function updateProgress() {
+            const allSubAndStandalone = document.querySelectorAll('input[type="checkbox"]:not([id$="_master"])');
+            const total = allSubAndStandalone.length;
+            let checkedCount = 0;
+            allSubAndStandalone.forEach(cb => {
+                if (cb.checked) checkedCount++;
+                localStorage.setItem(cb.id, cb.checked);
+            });
+            const masters = document.querySelectorAll('input[id$="_master"]');
+            masters.forEach(m => localStorage.setItem(m.id, m.checked));
+
+            const percentage = total > 0 ? Math.round((checkedCount / total) * 100) : 0;
+
+            const pBar = document.getElementById('progress-bar');
+            const pText = document.getElementById('progress-text');
+            if (pBar) pBar.style.width = percentage + '%';
+            if (pText) pText.innerText = percentage + '%';
+
+            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-done').innerText = checkedCount;
+            document.getElementById('stat-remaining').innerText = total - checkedCount;
+
+            let phonesDone = 0;
+            devicesData.forEach(dev => {
+                const prog = getDeviceProgress(dev.id);
+                const devPct = prog.total > 0 ? Math.round((prog.done / prog.total) * 100) : 0;
+                const bar = document.getElementById('bar-' + dev.id);
+                const pct = document.getElementById('pct-' + dev.id);
+                const badge = document.getElementById('badge-' + dev.id);
+                if (bar) bar.style.width = devPct + '%';
+                if (pct) pct.innerText = devPct + '%';
+                if (badge) {
+                    if (devPct === 100) {
+                        badge.innerText = '✓ ተጠናቋል';
+                        badge.className = 'completed-badge text-[10px] font-bold px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all';
+                        phonesDone++;
+                    } else if (devPct > 0) {
+                        badge.innerText = 'በሂደት ላይ';
+                        badge.className = 'text-[10px] font-bold px-2 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 transition-all';
+                    } else {
+                        badge.innerText = 'አልተጀመረም';
+                        badge.className = 'text-[10px] font-bold px-2 py-1 rounded-full bg-slate-700 text-slate-400 border border-slate-600 transition-all';
+                    }
+                }
+            });
+
+            document.getElementById('stat-phones-done').innerText = phonesDone + '/6';
+
+            const congratsBanner = document.getElementById('congrats-banner');
+            const allCheckboxes = document.querySelectorAll('input[type="checkbox"]');
+            if (percentage === 100) {
+                if (congratsBanner) congratsBanner.classList.remove('hidden');
+                allCheckboxes.forEach(cb => cb.disabled = true);
+                if (!celebrated) {
+                    celebrated = true;
+                    playVictorySound();
+                    if (typeof confetti === 'function') {
+                        confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
+                        setTimeout(() => confetti({ particleCount: 100, spread: 100, origin: { y: 0.7 }, colors: ['#f59e0b', '#10b981', '#3b82f6'] }), 300);
+                    }
+                }
+            } else {
+                if (congratsBanner) congratsBanner.classList.add('hidden');
+                celebrated = false;
+                allCheckboxes.forEach(cb => cb.disabled = false);
+            }
+        }
+
+        function loadSavedTasks() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                const savedState = localStorage.getItem(cb.id);
+                if (savedState !== null) {
+                    cb.checked = (savedState === 'true');
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderDashboard();
+            loadSavedTasks();
+            setupEventListeners();
+            updateProgress();
+            setInterval(updateClockAndCountdown, 1000);
+            updateClockAndCountdown();
+        });
+    </script>
+</body>
+</html>
