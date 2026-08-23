@@ -8,6 +8,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
     <style>
         * { -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
@@ -55,7 +60,6 @@
         .toggle-btn i { transition: transform 0.3s ease; }
         .toggle-btn.open i { transform: rotate(180deg); }
 
-        /* የቀን view/hide በተን መጠን ትልቅ እንዲሆን የተስተካከለ */
         .btn-view-tracker {
             padding: 6px 10px;
             background: rgba(245, 158, 11, 0.15);
@@ -73,7 +77,6 @@
         canvas { position: fixed !important; top: 0; left: 0; pointer-events: none; z-index: 9999; }
         .countdown-box { box-shadow: 0 0 15px rgba(245, 158, 11, 0.15); }
 
-        /* ጎላ ያሉ የቀን ማስተካከያና Reset በተኖች */
         .btn-day-adjust {
             font-weight: 700;
             font-size: 0.72rem;
@@ -214,11 +217,27 @@
 
         <!-- Footer -->
         <div class="mt-8 text-center pb-4">
-            <p class="text-[10px] text-slate-600">የስልክና አካውንት ታስክ መቆጣጠሪያ v2.1</p>
+            <p class="text-[10px] text-slate-600">የስልክና አካውንት ታስክ መቆጣጠሪያ v2.1 (Firebase Realtime Connected)</p>
         </div>
     </main>
 
     <script>
+        // 1. Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBH68jMv7c6WGB_z73e2IsTn3KTi2tg5c4",
+            authDomain: "argaw-timer.firebaseapp.com",
+            projectId: "argaw-timer",
+            storageBucket: "argaw-timer.firebasestorage.app",
+            messagingSenderId: "951329293569",
+            appId: "1:951329293569:web:00d5c0a6888972162a8700",
+            databaseURL: "https://argaw-timer-default-rtdb.firebaseio.com"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const tasksRef = db.ref('appState/tasks');
+        const daysRef = db.ref('appState/days');
+
         const appRules = {
             poppo: { daily: 2800, target: 100000, maxDays: 36 },
             tello: { daily: 10000, target: 1000000, maxDays: 100 },
@@ -226,7 +245,6 @@
             yago:  { daily: 1200, target: 100000, maxDays: 84 }
         };
 
-        /* በትክክለኛ የአካውንት ስሞች የተስተካከለው ዳታ */
         const devicesData = [
             {
                 id: "pro", name: "Phone Pro", badge: "Pro", color: "from-blue-500 to-cyan-500",
@@ -286,9 +304,10 @@
         ];
 
         let celebrated = false;
+        let daysCache = {};
 
         function getAccountStats(accId, appType) {
-            let daysWorked = parseInt(localStorage.getItem(accId + '_days_worked') || '0');
+            let daysWorked = daysCache[accId] !== undefined ? daysCache[accId] : parseInt(localStorage.getItem(accId + '_days_worked') || '0');
             const rule = appRules[appType];
             const earnedPoints = daysWorked * rule.daily;
             const remainingPoints = Math.max(0, rule.target - earnedPoints);
@@ -318,14 +337,15 @@
         }
 
         function updateAccountDays(accId, appType, increment) {
-            let days = parseInt(localStorage.getItem(accId + '_days_worked') || '0');
-            const rule = appRules[appType];
+            let days = daysCache[accId] !== undefined ? daysCache[accId] : parseInt(localStorage.getItem(accId + '_days_worked') || '0');
             if (increment) {
                 days++;
             } else {
                 if (days > 0) days--;
             }
+            daysCache[accId] = days;
             localStorage.setItem(accId + '_days_worked', days);
+            daysRef.child(accId).set(days);
             refreshSingleTrackerUI(accId, appType);
         }
 
@@ -341,7 +361,9 @@
         function resetAccountDays(accId, appType) {
             const confirmMsg = "🚨 አደገኛ ማስጠንቀቂያ!\n\nይህንን አካውንት በአንድ ጊዜ ወደ 0 ቀን እና 0 ነጥብ ዳግም ማስጀመር (Reset) ይፈልጋሉ?";
             if (confirm(confirmMsg)) {
+                daysCache[accId] = 0;
                 localStorage.setItem(accId + '_days_worked', 0);
+                daysRef.child(accId).set(0);
                 refreshSingleTrackerUI(accId, appType);
             }
         }
@@ -403,12 +425,15 @@
 
         function autoResetTasks() {
             const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            let updates = {};
             checkboxes.forEach(cb => {
                 cb.checked = false;
                 cb.disabled = false;
                 localStorage.removeItem(cb.id);
+                updates[cb.id] = false;
             });
-            updateProgress();
+            tasksRef.update(updates);
+            updateProgressLocal();
         }
 
         function requestNotificationPermission() {
@@ -698,7 +723,7 @@
                             updateAccountDays(accId, appType, this.checked);
                         }
                     }
-                    updateProgress();
+                    syncProgressToFirebase();
                 });
             });
 
@@ -710,16 +735,25 @@
             });
         }
 
-        function updateProgress() {
+        // 2. Firebase Syncing Logic
+        function syncProgressToFirebase() {
+            const allCheckboxes = document.querySelectorAll('input[type="checkbox"]');
+            let updates = {};
+            allCheckboxes.forEach(cb => {
+                updates[cb.id] = cb.checked;
+                localStorage.setItem(cb.id, cb.checked);
+            });
+            tasksRef.update(updates);
+            updateProgressLocal();
+        }
+
+        function updateProgressLocal() {
             const allSubAndStandalone = document.querySelectorAll('input[type="checkbox"]:not([id$="_master"])');
             const total = allSubAndStandalone.length;
             let checkedCount = 0;
             allSubAndStandalone.forEach(cb => {
                 if (cb.checked) checkedCount++;
-                localStorage.setItem(cb.id, cb.checked);
             });
-            const masters = document.querySelectorAll('input[id$="_master"]');
-            masters.forEach(m => localStorage.setItem(m.id, m.checked));
 
             const percentage = total > 0 ? Math.round((checkedCount / total) * 100) : 0;
 
@@ -778,21 +812,42 @@
             }
         }
 
-        function loadSavedTasks() {
-            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-            checkboxes.forEach(cb => {
-                const savedState = localStorage.getItem(cb.id);
-                if (savedState !== null) {
-                    cb.checked = (savedState === 'true');
+        // 3. Realtime Listeners from Firebase
+        function initFirebaseListeners() {
+            tasksRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    Object.keys(data).forEach(id => {
+                        const cb = document.getElementById(id);
+                        if (cb) {
+                            cb.checked = data[id];
+                            localStorage.setItem(id, data[id]);
+                        }
+                    });
+                    updateProgressLocal();
+                }
+            });
+
+            daysRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    daysCache = data;
+                    Object.keys(data).forEach(accId => {
+                        localStorage.setItem(accId + '_days_worked', data[accId]);
+                        let appType = 'poppo';
+                        if (accId.includes('tello')) appType = 'tello';
+                        else if (accId.includes('kaya')) appType = 'kaya';
+                        else if (accId.includes('yago')) appType = 'yago';
+                        refreshSingleTrackerUI(accId, appType);
+                    });
                 }
             });
         }
 
         document.addEventListener('DOMContentLoaded', () => {
             renderDashboard();
-            loadSavedTasks();
             setupEventListeners();
-            updateProgress();
+            initFirebaseListeners();
             setInterval(updateClockAndCountdown, 1000);
             updateClockAndCountdown();
         });
