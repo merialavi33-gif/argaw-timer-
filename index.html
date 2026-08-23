@@ -221,7 +221,7 @@
         </div>
     </main>
 
-    <!-- ሞጁላር Firebase Scripts ለ Messaging (Notifications) መጨመር -->
+    <!-- ሞጁላር Firebase Scripts ለ Messaging (Notifications) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js";
@@ -245,7 +245,6 @@
                 if (permission === 'granted') {
                     console.log('Notification permission granted.');
                     
-                    // አዲሱን VAPID Key ተጠቅመን ቶከን እንቀበላለን
                     const currentToken = await getToken(messaging, { 
                         vapidKey: 'BC2PNn5zI8lqDsL7hu75t4p9qoQJnT0jxhc2vEK8o4Ddqq_2Km2DQQOLVhMwW6h9r2RXhY_BG3t98tQr5_gw29Q' 
                     });
@@ -253,15 +252,17 @@
                     if (currentToken) {
                         console.log('FCM Token generated:', currentToken);
                         
-                        // ቶከኑን በ Firebase Realtime Database ላይ ማስቀመጥ (የCompat SDK dbን በመጠቀም)
+                        // የ Compat SDK db ተጠቅሞ ቶከኑን በ Firebase Realtime Database ላይ ማስቀመጥ
                         const safeTokenKey = currentToken.replace(/[^a-zA-Z0-9]/g, '_');
-                        db.ref('fcm_tokens/' + safeTokenKey).set({
-                            token: currentToken,
-                            updatedAt: Date.now()
-                        });
+                        if (typeof db !== 'undefined') {
+                            db.ref('fcm_tokens/' + safeTokenKey).set({
+                                token: currentToken,
+                                updatedAt: Date.now()
+                            });
+                        }
                         alert('የድምፅ ማሳወቂያው በትክክል ተፈቅዷል! ከሰርቨር ጋር ተገናኝቷል::');
                     } else {
-                        console.log('No registration token available. Request permission to generate one.');
+                        console.log('No registration token available.');
                         alert('ማሳወቂያ ማቀናበር አልተቻለም።');
                     }
                 } else {
@@ -274,11 +275,9 @@
             }
         }
 
-        // አፑ ክፍት እያለ መልዕክት ሲመጣ
         onMessage(messaging, (payload) => {
             console.log('Message received. ', payload);
             if (payload.notification) {
-                // በራሱ አፑ ላይ አነስ ያለ alert ወይም ድምፅ ማሰማት እንችላለን
                 if ('vibrate' in navigator) {
                     navigator.vibrate([200, 100, 200]);
                 }
@@ -290,7 +289,6 @@
 
     <!-- የድሮው (Compat) Firebase SDK እና የUI ሎጂክ -->
     <script>
-        // 1. Firebase Config (ለ Database ሎጂክ)
         const firebaseConfig = {
             apiKey: "AIzaSyBH68jMv7c6WGB_z73e2IsTn3KTi2tg5c4",
             authDomain: "argaw-timer.firebaseapp.com",
@@ -785,7 +783,6 @@
                 });
             });
 
-            // አዲሱን function እንጠራለን
             document.getElementById('notify-btn').addEventListener('click', function() {
                 if(window.requestNotificationPermission) {
                     window.requestNotificationPermission();
@@ -799,7 +796,6 @@
             });
         }
 
-        // 2. Firebase Syncing Logic
         function syncProgressToFirebase() {
             const allCheckboxes = document.querySelectorAll('input[type="checkbox"]');
             let updates = {};
@@ -876,7 +872,6 @@
             }
         }
 
-        // 3. Realtime Listeners from Firebase
         function initFirebaseListeners() {
             tasksRef.on('value', (snapshot) => {
                 const data = snapshot.val();
