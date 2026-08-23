@@ -238,7 +238,6 @@
         const appModular = initializeApp(firebaseConfigModular, "modular-app");
         const messaging = getMessaging(appModular);
 
-        // ለ Notification ድምፅ የሚጠየቅበት ፋንክሽን
         window.requestNotificationPermission = async function() {
             try {
                 const permission = await Notification.requestPermission();
@@ -251,8 +250,6 @@
                     
                     if (currentToken) {
                         console.log('FCM Token generated:', currentToken);
-                        
-                        // የ Compat SDK db ተጠቅሞ ቶከኑን በ Firebase Realtime Database ላይ ማስቀመጥ
                         const safeTokenKey = currentToken.replace(/[^a-zA-Z0-9]/g, '_');
                         if (typeof db !== 'undefined') {
                             db.ref('fcm_tokens/' + safeTokenKey).set({
