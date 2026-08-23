@@ -9,7 +9,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
-    <!-- Firebase SDKs -->
+    <!-- Firebase SDKs (Compat - For Realtime Database) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
@@ -217,12 +217,80 @@
 
         <!-- Footer -->
         <div class="mt-8 text-center pb-4">
-            <p class="text-[10px] text-slate-600">የስልክና አካውንት ታስክ መቆጣጠሪያ v2.1 (Firebase Realtime Connected)</p>
+            <p class="text-[10px] text-slate-600">የስልክና አካውንት ታስክ መቆጣጠሪያ v2.2 (Firebase Realtime + Push Notifications)</p>
         </div>
     </main>
 
+    <!-- ሞጁላር Firebase Scripts ለ Messaging (Notifications) መጨመር -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js";
+
+        const firebaseConfigModular = {
+            apiKey: "AIzaSyBH68jMv7c6WGB_z73e2IsTn3KTi2tg5c4",
+            authDomain: "argaw-timer.firebaseapp.com",
+            projectId: "argaw-timer",
+            storageBucket: "argaw-timer.firebasestorage.app",
+            messagingSenderId: "951329293569",
+            appId: "1:951329293569:web:00d5c0a6888972162a8700"
+        };
+
+        const appModular = initializeApp(firebaseConfigModular, "modular-app");
+        const messaging = getMessaging(appModular);
+
+        // ለ Notification ድምፅ የሚጠየቅበት ፋንክሽን
+        window.requestNotificationPermission = async function() {
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    console.log('Notification permission granted.');
+                    
+                    // አዲሱን VAPID Key ተጠቅመን ቶከን እንቀበላለን
+                    const currentToken = await getToken(messaging, { 
+                        vapidKey: 'BC2PNn5zI8lqDsL7hu75t4p9qoQJnT0jxhc2vEK8o4Ddqq_2Km2DQQOLVhMwW6h9r2RXhY_BG3t98tQr5_gw29Q' 
+                    });
+                    
+                    if (currentToken) {
+                        console.log('FCM Token generated:', currentToken);
+                        
+                        // ቶከኑን በ Firebase Realtime Database ላይ ማስቀመጥ (የCompat SDK dbን በመጠቀም)
+                        const safeTokenKey = currentToken.replace(/[^a-zA-Z0-9]/g, '_');
+                        db.ref('fcm_tokens/' + safeTokenKey).set({
+                            token: currentToken,
+                            updatedAt: Date.now()
+                        });
+                        alert('የድምፅ ማሳወቂያው በትክክል ተፈቅዷል! ከሰርቨር ጋር ተገናኝቷል::');
+                    } else {
+                        console.log('No registration token available. Request permission to generate one.');
+                        alert('ማሳወቂያ ማቀናበር አልተቻለም።');
+                    }
+                } else {
+                    console.log('Unable to get permission to notify.');
+                    alert('እባክዎን ማሳወቂያ እንዲደርስዎ ፈቃድ ይስጡ::');
+                }
+            } catch (err) {
+                console.log('An error occurred while retrieving token. ', err);
+                alert('የድምፅ ማሳወቂያ ስህተት አጋጥሟል! (ክሮም ወይም ሳፋሪ ይጠቀሙ)');
+            }
+        }
+
+        // አፑ ክፍት እያለ መልዕክት ሲመጣ
+        onMessage(messaging, (payload) => {
+            console.log('Message received. ', payload);
+            if (payload.notification) {
+                // በራሱ አፑ ላይ አነስ ያለ alert ወይም ድምፅ ማሰማት እንችላለን
+                if ('vibrate' in navigator) {
+                    navigator.vibrate([200, 100, 200]);
+                }
+                const audio = new Audio('https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg');
+                audio.play().catch(e => console.log('Audio play failed:', e));
+            }
+        });
+    </script>
+
+    <!-- የድሮው (Compat) Firebase SDK እና የUI ሎጂክ -->
     <script>
-        // 1. Firebase Config
+        // 1. Firebase Config (ለ Database ሎጂክ)
         const firebaseConfig = {
             apiKey: "AIzaSyBH68jMv7c6WGB_z73e2IsTn3KTi2tg5c4",
             authDomain: "argaw-timer.firebaseapp.com",
@@ -233,7 +301,9 @@
             databaseURL: "https://argaw-timer-default-rtdb.firebaseio.com"
         };
 
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
         const db = firebase.database();
         const tasksRef = db.ref('appState/tasks');
         const daysRef = db.ref('appState/days');
@@ -349,7 +419,7 @@
             refreshSingleTrackerUI(accId, appType);
         }
 
-        function manualAdjustDays(accId, appType, increment) {
+        window.manualAdjustDays = function(accId, appType, increment) {
             const actionText = increment ? "ለመጨመር" : "ለመቀነስ";
             const confirmMsg = "⚠️ ማስጠንቀቂያ\n\nየአካውንቱን የቀን/ነጥብ መቁጠሪያ 1 ቀን " + actionText + " እርግጠኛ ነዎት?";
             
@@ -358,7 +428,7 @@
             }
         }
 
-        function resetAccountDays(accId, appType) {
+        window.resetAccountDays = function(accId, appType) {
             const confirmMsg = "🚨 አደገኛ ማስጠንቀቂያ!\n\nይህንን አካውንት በአንድ ጊዜ ወደ 0 ቀን እና 0 ነጥብ ዳግም ማስጀመር (Reset) ይፈልጋሉ?";
             if (confirm(confirmMsg)) {
                 daysCache[accId] = 0;
@@ -434,18 +504,6 @@
             });
             tasksRef.update(updates);
             updateProgressLocal();
-        }
-
-        function requestNotificationPermission() {
-            if ('Notification' in window) {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        alert('የድምፅ ማሳወቂያው በትክክል ተፈቅዷል');
-                    } else {
-                        alert('እባክዎን ማሳወቂያ እንዲደርስዎ ፈቃድ ይስጡ');
-                    }
-                });
-            }
         }
 
         function playVictorySound() {
@@ -727,7 +785,13 @@
                 });
             });
 
-            document.getElementById('notify-btn').addEventListener('click', requestNotificationPermission);
+            // አዲሱን function እንጠራለን
+            document.getElementById('notify-btn').addEventListener('click', function() {
+                if(window.requestNotificationPermission) {
+                    window.requestNotificationPermission();
+                }
+            });
+            
             document.getElementById('reset-btn').addEventListener('click', function() {
                 if (confirm('የዛሬ የታስክ ቲክ ምልክቶች ዳግም ይጀመራሉ። የቀንና የነጥብ መቁጠሪያው ግን አይጠፉም። እርግጠኛ ነዎት?')) {
                     autoResetTasks();
