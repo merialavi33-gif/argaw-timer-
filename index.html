@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="am">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>የስልክና አካውንት ታስክ መቆጣጠሪያ</title>
+    <title>Multi-Device Task & Account Controller</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -57,6 +57,13 @@
         }
         .completed-badge { animation: pulse-green 2s infinite; }
 
+        @keyframes blink-animation {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+        .blink-icon { animation: blink-animation 1.5s infinite; }
+
         .toggle-btn i { transition: transform 0.3s ease; }
         .toggle-btn.open i { transform: rotate(180deg); }
 
@@ -88,24 +95,35 @@
             gap: 3px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
-        .btn-day-plus {
-            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-            color: #ffffff;
-            border: 1px solid #34d399;
-        }
-        .btn-day-plus:active { transform: scale(0.92); }
-        .btn-day-minus {
+        .btn-day-edit {
             background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
             color: #ffffff;
             border: 1px solid #fbbf24;
         }
-        .btn-day-minus:active { transform: scale(0.92); }
+        .btn-day-edit:active { transform: scale(0.92); }
+        .btn-day-save {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: #ffffff;
+            border: 1px solid #34d399;
+        }
+        .btn-day-save:active { transform: scale(0.92); }
         .btn-day-reset {
             background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
             color: #ffffff;
             border: 1px solid #f87171;
         }
         .btn-day-reset:active { transform: scale(0.92); }
+        
+        .point-input {
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #f59e0b;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            width: 105px;
+            text-align: center;
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen pb-20">
@@ -118,9 +136,9 @@
                     <i class="fa-solid fa-mobile-screen text-slate-950 text-lg"></i>
                 </div>
                 <div>
-                    <h1 class="text-base md:text-lg font-bold text-amber-400 leading-tight">የስልኮችና ታስክ መቆጣጠሪያ</h1>
+                    <h1 class="text-base md:text-lg font-bold text-amber-400 leading-tight">Device & Task Controller</h1>
                     <p id="ethiopian-date-display" class="text-[11px] text-emerald-400 font-semibold mt-0.5">
-                        <i class="fa-regular fa-calendar-days mr-1"></i> በመጫን ላይ...
+                        <i class="fa-regular fa-calendar-days mr-1"></i> ቀኑ በመጫን ላይ...
                     </p>
                 </div>
             </div>
@@ -130,7 +148,7 @@
                     <span id="countdown-timer" class="text-sm font-mono font-bold text-amber-400 tracking-wider">00:00:00</span>
                 </div>
                 <button id="notify-btn" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all shadow-lg shadow-amber-500/20">
-                    <i class="fa-solid fa-bell"></i> <span class="hidden sm:inline">ድምፅ</span>
+                    <i class="fa-solid fa-bell"></i> <span class="hidden sm:inline">Sound Test</span>
                 </button>
             </div>
         </div>
@@ -141,7 +159,7 @@
         <!-- Congrats Banner -->
         <div id="congrats-banner" class="hidden bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/50 text-emerald-300 p-4 rounded-2xl mb-5 text-center shadow-lg shadow-emerald-500/10">
             <h2 class="text-base font-bold flex items-center justify-center gap-2">
-                <span class="text-xl">🎉</span> እንኳን ደስ አለዎት! የዛሬ ታስኮች በሙሉ ተጠናቀዋል!
+                <span class="text-xl">🎉</span> እንኳን ደስ አሎት! የዛሬዎቹ ስራዎች ሙሉ በሙሉ ተጠናቀዋል!
             </h2>
         </div>
 
@@ -152,7 +170,7 @@
                     <i class="fa-solid fa-list-check text-amber-400"></i>
                 </div>
                 <div>
-                    <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">ጠቅላላ ታስኮች</p>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Total Tasks</p>
                     <p id="stat-total" class="text-xl font-extrabold text-slate-100">0</p>
                 </div>
             </div>
@@ -161,7 +179,7 @@
                     <i class="fa-solid fa-check-circle text-emerald-400"></i>
                 </div>
                 <div>
-                    <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">የተጠናቀቁ</p>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Completed</p>
                     <p id="stat-done" class="text-xl font-extrabold text-emerald-400">0</p>
                 </div>
             </div>
@@ -170,7 +188,7 @@
                     <i class="fa-solid fa-hourglass-half text-rose-400"></i>
                 </div>
                 <div>
-                    <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">የቀሩ ታስኮች</p>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Remaining</p>
                     <p id="stat-remaining" class="text-xl font-extrabold text-rose-400">0</p>
                 </div>
             </div>
@@ -179,7 +197,7 @@
                     <i class="fa-solid fa-mobile-screen-button text-blue-400"></i>
                 </div>
                 <div>
-                    <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">የተጠናቀቁ ስልኮች</p>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Phones Done</p>
                     <p id="stat-phones-done" class="text-xl font-extrabold text-blue-400">0/6</p>
                 </div>
             </div>
@@ -190,17 +208,17 @@
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                 <div>
                     <h2 class="text-base font-bold text-slate-100 flex items-center gap-2">
-                        <i class="fa-solid fa-chart-pie text-amber-400"></i> የዛሬው የሥራ አፈጻጸም ደረጃ
+                        <i class="fa-solid fa-chart-pie text-amber-400"></i> Today's Performance Progress
                     </h2>
-                    <p class="text-[11px] text-slate-400 mt-0.5">የተከፋፈሉ የሰዓት ታስኮች በሙሉ ይቆጣጠሩ (6 ስልኮች)</p>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Track all scheduled shift tasks across 6 mobile devices</p>
                 </div>
                 <div class="flex items-center gap-3">
                     <button id="reset-btn" class="text-[11px] bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 px-3 py-1.5 rounded-lg transition-all active:scale-95">
-                        <i class="fa-solid fa-rotate-left mr-1"></i>የዛሬን ዳግም አስጀምር
+                        <i class="fa-solid fa-rotate-left mr-1"></i>Reset Today's Ticks
                     </button>
                     <div class="text-right">
                         <span id="progress-text" class="text-3xl font-extrabold text-emerald-400">0%</span>
-                        <span class="text-[10px] text-slate-400 block">የተጠናቀቀ</span>
+                        <span class="text-[10px] text-slate-400 block">Completed</span>
                     </div>
                 </div>
             </div>
@@ -217,11 +235,11 @@
 
         <!-- Footer -->
         <div class="mt-8 text-center pb-4">
-            <p class="text-[10px] text-slate-600">የስልክና አካውንት ታስክ መቆጣጠሪያ v2.3 (Firebase Realtime + Sound Handler)</p>
+            <p class="text-[10px] text-slate-600">Multi-Device Task Controller v2.7 (Exact Point Display without Rounding)</p>
         </div>
     </main>
 
-    <!-- ቀላል የድምፅ ማጫወቻ እና ኖቲፊኬሽን ሃንድለር (ስህተት የማይፈጥር) -->
+    <!-- Sound & Notification Handler -->
     <script>
         window.requestNotificationPermission = function() {
             try {
@@ -230,15 +248,15 @@
                 }
                 const audio = new Audio('https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg');
                 audio.play().catch(e => console.log('Audio play failed:', e));
-                alert('የድምፅ ማንቂያው በትክክል ተፈትኗል!');
+                alert('Audio alert tested successfully!');
             } catch (err) {
                 console.log('Audio notification error: ', err);
-                alert('ድምፅ ማጫወት አልተቻለም።');
+                alert('Could not play audio.');
             }
         }
     </script>
 
-    <!-- የድሮው (Compat) Firebase SDK እና የUI ሎጂክ -->
+    <!-- Firebase SDK & UI Logic -->
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyBH68jMv7c6WGB_z73e2IsTn3KTi2tg5c4",
@@ -258,10 +276,10 @@
         const daysRef = db.ref('appState/days');
 
         const appRules = {
-            poppo: { daily: 2800, target: 100000, maxDays: 36 },
-            tello: { daily: 10000, target: 1000000, maxDays: 100 },
-            kaya:  { daily: 1000, target: 100000, maxDays: 100 },
-            yago:  { daily: 1200, target: 100000, maxDays: 84 }
+            poppo: { daily: 2800, target: 100000, targetFormatted: "100k", maxDays: 36 },
+            tello: { daily: 10000, target: 1000000, targetFormatted: "1m", maxDays: 100 },
+            kaya:  { daily: 1000, target: 100000, targetFormatted: "100k", maxDays: 100 },
+            yago:  { daily: 1200, target: 100000, targetFormatted: "100k", maxDays: 84 }
         };
 
         const devicesData = [
@@ -269,8 +287,8 @@
                 id: "pro", name: "Phone Pro", badge: "Pro", color: "from-blue-500 to-cyan-500",
                 poppo: [{ id: "pro_poppo_1", name: "Poppo (pro)", type: "poppo" }],
                 tello: [
-                    { id: "pro_tello_1", name: "Tello (pro) - Party (2 ሰዓት)", type: "tello" },
-                    { id: "pro_tello_2", name: "Tello (kalkidan) - Party (2 ሰዓት)", type: "tello" }
+                    { id: "pro_tello_1", name: "Tello (pro) - Party (2 hrs)", type: "tello" },
+                    { id: "pro_tello_2", name: "Tello (kalkidan) - Party (2 hrs)", type: "tello" }
                 ],
                 kaya: [], yago: []
             },
@@ -278,118 +296,160 @@
                 id: "nova", name: "Phone Nova", badge: "Nova", color: "from-purple-500 to-pink-500",
                 poppo: [{ id: "nova_poppo_1", name: "Poppo (nova)", type: "poppo" }],
                 tello: [
-                    { id: "nova_tello_1", name: "Tello (neli) - Party (2 ሰዓት)", type: "tello" },
-                    { id: "nova_tello_2", name: "Tello (bruksol) - Party (2 ሰዓት)", type: "tello" }
+                    { id: "nova_tello_1", name: "Tello (neli) - Party (2 hrs)", type: "tello" },
+                    { id: "nova_tello_2", name: "Tello (bruksol) - Party (2 hrs)", type: "tello" }
                 ],
-                kaya: [{ id: "nova_kaya_1", name: "Kaya (abigia) - Party (2 ሰዓት)", type: "kaya" }],
+                kaya: [{ id: "nova_kaya_1", name: "Kaya (abigia) - Party (2 hrs)", type: "kaya" }],
                 yago: []
             },
             {
                 id: "eh", name: "Phone EH", badge: "EH", color: "from-orange-500 to-red-500",
                 poppo: [{ id: "eh_poppo_1", name: "Poppo (lavish esha)", type: "poppo" }],
                 tello: [
-                    { id: "eh_tello_1", name: "Tello (eftah) - Party (2 ሰዓት)", type: "tello" },
-                    { id: "eh_tello_2", name: "Tello (abush) - Party (2 ሰዓት)", type: "tello" },
-                    { id: "eh_tello_3", name: "Tello (tedi) - Party (2 ሰዓት)", type: "tello" }
+                    { id: "eh_tello_1", name: "Tello (eftah) - Party (2 hrs)", type: "tello" },
+                    { id: "eh_tello_2", name: "Tello (abush) - Party (2 hrs)", type: "tello" },
+                    { id: "eh_tello_3", name: "Tello (tedi) - Party (2 hrs)", type: "tello" }
                 ],
-                kaya: [{ id: "eh_kaya_1", name: "Kaya (kayakal) - Party (2 ሰዓት)", type: "kaya" }],
+                kaya: [{ id: "eh_kaya_1", name: "Kaya (kayakal) - Party (2 hrs)", type: "kaya" }],
                 yago: []
             },
             {
                 id: "yab", name: "Phone Yab", badge: "Yab", color: "from-emerald-500 to-teal-500",
                 poppo: [{ id: "yab_poppo_1", name: "Poppo (yab)", type: "poppo" }],
                 tello: [
-                    { id: "yab_tello_1", name: "Tello (afi man) - Party (2 ሰዓት)", type: "tello" },
-                    { id: "yab_tello_2", name: "Tello (ኤማንዳ) - Party (2 ሰዓት)", type: "tello" },
-                    { id: "yab_tello_3", name: "Tello (neli jak) - Party (2 ሰዓት)", type: "tello" }
+                    { id: "yab_tello_1", name: "Tello (afi man) - Party (2 hrs)", type: "tello" },
+                    { id: "yab_tello_2", name: "Tello (ኤማንዳ) - Party (2 hrs)", type: "tello" },
+                    { id: "yab_tello_3", name: "Tello (neli jak) - Party (2 hrs)", type: "tello" }
                 ],
                 kaya: [],
-                yago: [{ id: "yab_yago_1", name: "Yago (agb man) - Party (1 ሰዓት)", type: "yago" }]
+                yago: [{ id: "yab_yago_1", name: "Yago (agb man) - Party (1 hr)", type: "yago" }]
             },
             {
                 id: "zte", name: "Phone ZTE", badge: "ZTE", color: "from-indigo-500 to-violet-500",
                 poppo: [{ id: "zte_poppo_1", name: "Poppo (hiri mon)", type: "poppo" }],
-                tello: [{ id: "zte_tello_1", name: "Tello (tsi1229) - Party (2 ሰዓት)", type: "tello" }],
-                kaya: [{ id: "zte_kaya_1", name: "Kaya (gigi.m) - Party (2 ሰዓት)", type: "kaya" }],
+                tello: [{ id: "zte_tello_1", name: "Tello (tsi1229) - Party (2 hrs)", type: "tello" }],
+                kaya: [{ id: "zte_kaya_1", name: "Kaya (gigi.m) - Party (2 hrs)", type: "kaya" }],
                 yago: []
             },
             {
                 id: "readspark", name: "Phone Read Spark", badge: "Read Spark", color: "from-rose-500 to-pink-500",
                 poppo: [{ id: "readspark_poppo_1", name: "Poppo (neli jack)", type: "poppo" }],
-                tello: [{ id: "readspark_tello_1", name: "Tello (maria lavi) - Party (2 ሰዓት)", type: "tello" }],
-                kaya: [{ id: "readspark_kaya_1", name: "Kaya (mama) - Party (2 ሰዓት)", type: "kaya" }],
+                tello: [{ id: "readspark_tello_1", name: "Tello (maria lavi) - Party (2 hrs)", type: "tello" }],
+                kaya: [{ id: "readspark_kaya_1", name: "Kaya (mama) - Party (2 hrs)", type: "kaya" }],
                 yago: []
             }
         ];
 
         let celebrated = false;
         let daysCache = {};
+        let editingStates = {};
+
+        function formatPoints(points) {
+            if (isNaN(points)) return "0";
+            return Number(points).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+        }
 
         function getAccountStats(accId, appType) {
-            let daysWorked = daysCache[accId] !== undefined ? daysCache[accId] : parseInt(localStorage.getItem(accId + '_days_worked') || '0');
+            let earnedPoints = daysCache[accId] !== undefined ? parseFloat(daysCache[accId]) : parseFloat(localStorage.getItem(accId + '_earned_points') || '0');
+            if (isNaN(earnedPoints)) earnedPoints = 0;
+            
             const rule = appRules[appType];
-            const earnedPoints = daysWorked * rule.daily;
-            const remainingPoints = Math.max(0, rule.target - earnedPoints);
-            const remainingDays = Math.ceil(remainingPoints / rule.daily);
+            let daysWorked = Math.floor(earnedPoints / rule.daily);
 
-            return { daysWorked, earnedPoints, remainingDays, target: rule.target };
+            const remainingPoints = Math.max(0, rule.target - earnedPoints);
+            const remainingDays = Math.max(0, Math.ceil(remainingPoints / rule.daily));
+
+            return { 
+                daysWorked: daysWorked, 
+                earnedPoints: earnedPoints, 
+                earnedFormatted: formatPoints(earnedPoints),
+                remainingDays, 
+                target: rule.target,
+                targetFormatted: rule.targetFormatted 
+            };
         }
 
         function refreshSingleTrackerUI(accId, appType) {
             const statsContainer = document.getElementById(accId + '_stats');
             if (statsContainer) {
                 const stats = getAccountStats(accId, appType);
+                const isEditing = editingStates[accId] || false;
+
+                let pointsDisplayHtml = '';
+                if (isEditing) {
+                    pointsDisplayHtml = '<input type="number" id="' + accId + '_input" value="' + stats.earnedPoints + '" class="point-input" step="any" min="0">';
+                } else {
+                    pointsDisplayHtml = '<strong class="text-yellow-400 font-bold">' + stats.earnedFormatted + '</strong>';
+                }
+
+                let actionButtonHtml = '';
+                if (isEditing) {
+                    actionButtonHtml = '<button onclick="saveAccountPoints(\'' + accId + '\', \'' + appType + '\')" class="btn-day-adjust btn-day-save" title="Save Points"><i class="fa-solid fa-floppy-disk text-[10px]"></i> Save</button>';
+                } else {
+                    actionButtonHtml = '<button onclick="toggleEditPoints(\'' + accId + '\', \'' + appType + '\')" class="btn-day-adjust btn-day-edit" title="Edit Points"><i class="fa-solid fa-pen-to-square text-[10px]"></i> Edit</button>';
+                }
+
                 statsContainer.innerHTML = 
                     '<div class="flex justify-between items-center text-slate-300 font-medium">' +
-                        '<span><i class="fa-regular fa-calendar-check text-amber-400 mr-1"></i>የተሰራው፡ <strong class="text-amber-400 font-bold">' + stats.daysWorked + ' ቀን</strong></span>' +
-                        '<span><i class="fa-solid fa-coins text-yellow-400 mr-1"></i>' + stats.earnedPoints.toLocaleString() + ' / ' + stats.target.toLocaleString() + '</span>' +
+                        '<span><i class="fa-regular fa-calendar-check text-amber-400 mr-1"></i>Days: <strong class="text-amber-400 font-bold">' + stats.daysWorked + ' d</strong></span>' +
+                        '<span><i class="fa-solid fa-coins text-yellow-400 blink-icon mr-1"></i>Points: ' + pointsDisplayHtml + ' / ' + stats.targetFormatted + '</span>' +
                     '</div>' +
                     '<div class="flex justify-between items-center text-slate-400 mt-1 flex-wrap gap-1">' +
-                        '<span class="text-emerald-400 font-semibold"><i class="fa-solid fa-hourglass-start mr-1"></i>ለመቀየር የቀረው፡ ' + stats.remainingDays + ' ቀን</span>' +
+                        '<span class="text-emerald-400 font-semibold"><i class="fa-solid fa-hourglass-start mr-1"></i>Days Left: ' + stats.remainingDays + '</span>' +
                         '<div class="flex items-center gap-1 ml-auto">' +
-                            '<button onclick="manualAdjustDays(\'' + accId + '\', \'' + appType + '\', false)" class="btn-day-adjust btn-day-minus"><i class="fa-solid fa-minus text-[9px]"></i> 1</button>' +
-                            '<button onclick="manualAdjustDays(\'' + accId + '\', \'' + appType + '\', true)" class="btn-day-adjust btn-day-plus"><i class="fa-solid fa-plus text-[9px]"></i> 1</button>' +
-                            '<button onclick="resetAccountDays(\'' + accId + '\', \'' + appType + '\')" class="btn-day-adjust btn-day-reset"><i class="fa-solid fa-rotate-left text-[9px]"></i> Reset</button>' +
+                            actionButtonHtml +
+                            '<button onclick="resetAccountDays(\'' + accId + '\', \'' + appType + '\')" class="btn-day-adjust btn-day-reset" title="Reset Account"><i class="fa-solid fa-rotate-left text-[9px]"></i> Reset</button>' +
                         '</div>' +
                     '</div>';
             }
         }
 
-        function updateAccountDays(accId, appType, increment) {
-            let days = daysCache[accId] !== undefined ? daysCache[accId] : parseInt(localStorage.getItem(accId + '_days_worked') || '0');
-            if (increment) {
-                days++;
-            } else {
-                if (days > 0) days--;
+        window.toggleEditPoints = function(accId, appType) {
+            const confirmMsg = "⚠️ ማስጠንቀቂያ\n\nየዚህን አካውንት ፖይንት በቀጥታ ማስተካከል ይፈልጋሉ?";
+            if (confirm(confirmMsg)) {
+                editingStates[accId] = true;
+                refreshSingleTrackerUI(accId, appType);
             }
-            daysCache[accId] = days;
-            localStorage.setItem(accId + '_days_worked', days);
-            daysRef.child(accId).set(days);
-            refreshSingleTrackerUI(accId, appType);
         }
 
-        window.manualAdjustDays = function(accId, appType, increment) {
-            const actionText = increment ? "ለመጨመር" : "ለመቀነስ";
-            const confirmMsg = "⚠️ ማስጠንቀቂያ\n\nየአካውንቱን የቀን/ነጥብ መቁጠሪያ 1 ቀን " + actionText + " እርግጠኛ ነዎት?";
-            
-            if (confirm(confirmMsg)) {
-                updateAccountDays(accId, appType, increment);
+        window.saveAccountPoints = function(accId, appType) {
+            const inputElem = document.getElementById(accId + '_input');
+            if (inputElem) {
+                let newPoints = parseFloat(inputElem.value);
+                if (isNaN(newPoints) || newPoints < 0) {
+                    alert('እባክዎ ትክክለኛ የፖይንት ቁጥር ያስገቡ!');
+                    return;
+                }
+                
+                const rule = appRules[appType];
+                let exactPoints = newPoints;
+                let calculatedDays = Math.floor(exactPoints / rule.daily);
+
+                const confirmMsg = "💾 ማረጋገጫ\n\nየተገባው ፖይንት (" + exactPoints + " pts) እና የሚሰላው ቀን (" + calculatedDays + " ቀን) በትክክል ይቀመጥ?";
+                if (confirm(confirmMsg)) {
+                    daysCache[accId] = exactPoints;
+                    localStorage.setItem(accId + '_earned_points', exactPoints);
+                    daysRef.child(accId).set(exactPoints);
+                    editingStates[accId] = false;
+                    refreshSingleTrackerUI(accId, appType);
+                }
             }
         }
 
         window.resetAccountDays = function(accId, appType) {
-            const confirmMsg = "🚨 አደገኛ ማስጠንቀቂያ!\n\nይህንን አካውንት በአንድ ጊዜ ወደ 0 ቀን እና 0 ነጥብ ዳግም ማስጀመር (Reset) ይፈልጋሉ?";
+            const confirmMsg = "🚨 ማስጠንቀቂያ!\n\nየዚህን አካውንት ፖይንት እና ቀን ሙሉ በሙሉ ወደ 0 መመለስ ይፈልጋሉ?";
             if (confirm(confirmMsg)) {
+                editingStates[accId] = false;
                 daysCache[accId] = 0;
-                localStorage.setItem(accId + '_days_worked', 0);
+                localStorage.setItem(accId + '_earned_points', 0);
                 daysRef.child(accId).set(0);
                 refreshSingleTrackerUI(accId, appType);
             }
         }
 
         function toEthiopianDate(date) {
-            const days = ["እሑድ", "ሰኞ", "ማክሰኞ", "ረቡዕ", "ሐሙስ", "ዓርብ", "ቅዳሜ"];
-            const ethMonths = ["መስከረም", "ጥቅምት", "ሕዳር", "ታኅሣሥ", "ጥር", "የካቲት", "መጋቢት", "ሚያዝያ", "ግንቦት", "ሰኔ", "ሐምሌ", "ነሐሴ", "ጳጉሜ"];
+            const days = ["እሁድ", "ሰኞ", "ማክሰኞ", "ረቡዕ", "ሐሙስ", "አርብ", "ቅዳሜ"];
+            const ethMonths = ["መስከረም", "ጥቅምት", "ህዳር", "ታህሳስ", "ጥር", "የካቲት", "መጋቢት", "ሚያዚያ", "ግንቦት", "ሰኔ", "ሀምሌ", "ነሐሴ", "ጳጉሜ"];
             const dayName = days[date.getDay()];
             const year = date.getFullYear();
             let ethYear = year - 8;
@@ -409,7 +469,7 @@
                 ethMonth = Math.floor(diff / 30);
                 ethDay = (diff % 30) + 1;
             }
-            return dayName + "፣ " + ethMonths[ethMonth] + " " + ethDay + " ቀን " + ethYear + " ዓ.ም";
+            return dayName + "፣ " + ethMonths[ethMonth] + " " + ethDay + "፣ " + ethYear + " ዓ.ም.";
         }
 
         function updateClockAndCountdown() {
@@ -472,13 +532,13 @@
         }
 
         function getAppNameFromId(id) {
-            if (id.indexOf('_master') !== -1) return 'Poppo ሙሉ ታስክ';
+            if (id.indexOf('_master') !== -1) return 'Poppo Full Task';
             if (id.indexOf('_live') !== -1) return 'Poppo Live';
             if (id.indexOf('_party') !== -1) return 'Poppo Party';
             if (id.indexOf('tello') !== -1) return 'Tello';
             if (id.indexOf('kaya') !== -1) return 'Kaya';
             if (id.indexOf('yago') !== -1) return 'Yago';
-            return 'ይህ ታስክ';
+            return 'This task';
         }
 
         function countDeviceTasks(dev) {
@@ -517,19 +577,37 @@
             return { total, done };
         }
 
+        function updateAccountPointsIncrement(accId, appType, isChecked) {
+            let earnedPoints = daysCache[accId] !== undefined ? parseFloat(daysCache[accId]) : parseFloat(localStorage.getItem(accId + '_earned_points') || '0');
+            if (isNaN(earnedPoints)) earnedPoints = 0;
+
+            const rule = appRules[appType];
+            const dailyPoints = rule.daily; 
+            
+            if (isChecked) {
+                earnedPoints += dailyPoints;
+            } else {
+                earnedPoints = Math.max(0, earnedPoints - dailyPoints);
+            }
+            
+            daysCache[accId] = earnedPoints;
+            localStorage.setItem(accId + '_earned_points', earnedPoints);
+            daysRef.child(accId).set(earnedPoints);
+            refreshSingleTrackerUI(accId, appType);
+        }
+
         function createTrackerBadgeHtml(accId, appType) {
             const stats = getAccountStats(accId, appType);
             return '<div id="' + accId + '_stats" class="hidden my-2 p-2.5 bg-slate-900/90 rounded-xl border border-slate-700/70 text-[10px] space-y-1.5 shadow-inner">' +
                 '<div class="flex justify-between items-center text-slate-300 font-medium">' +
-                    '<span><i class="fa-regular fa-calendar-check text-amber-400 mr-1"></i>የተሰራው፡ <strong class="text-amber-400 font-bold">' + stats.daysWorked + ' ቀን</strong></span>' +
-                    '<span><i class="fa-solid fa-coins text-yellow-400 mr-1"></i>' + stats.earnedPoints.toLocaleString() + ' / ' + stats.target.toLocaleString() + '</span>' +
+                    '<span><i class="fa-regular fa-calendar-check text-amber-400 mr-1"></i>Days: <strong class="text-amber-400 font-bold">' + stats.daysWorked + ' d</strong></span>' +
+                    '<span><i class="fa-solid fa-coins text-yellow-400 blink-icon mr-1"></i>Points: <strong class="text-yellow-400 font-bold">' + stats.earnedFormatted + '</strong> / ' + stats.targetFormatted + '</span>' +
                 '</div>' +
                 '<div class="flex justify-between items-center text-slate-400 mt-1 flex-wrap gap-1">' +
-                    '<span class="text-emerald-400 font-semibold"><i class="fa-solid fa-hourglass-start mr-1"></i>ለመቀየር የቀረው፡ ' + stats.remainingDays + ' ቀን</span>' +
+                    '<span class="text-emerald-400 font-semibold"><i class="fa-solid fa-hourglass-start mr-1"></i>Days Left: ' + stats.remainingDays + '</span>' +
                     '<div class="flex items-center gap-1 ml-auto">' +
-                        '<button onclick="manualAdjustDays(\'' + accId + '\', \'' + appType + '\', false)" class="btn-day-adjust btn-day-minus"><i class="fa-solid fa-minus text-[9px]"></i> 1</button>' +
-                        '<button onclick="manualAdjustDays(\'' + accId + '\', \'' + appType + '\', true)" class="btn-day-adjust btn-day-plus"><i class="fa-solid fa-plus text-[9px]"></i> 1</button>' +
-                        '<button onclick="resetAccountDays(\'' + accId + '\', \'' + appType + '\')" class="btn-day-adjust btn-day-reset"><i class="fa-solid fa-rotate-left text-[9px]"></i> Reset</button>' +
+                        '<button onclick="toggleEditPoints(\'' + accId + '\', \'' + appType + '\')" class="btn-day-adjust btn-day-edit" title="Edit Points"><i class="fa-solid fa-pen-to-square text-[10px]"></i> Edit</button>' +
+                        '<button onclick="resetAccountDays(\'' + accId + '\', \'' + appType + '\')" class="btn-day-adjust btn-day-reset" title="Reset Account"><i class="fa-solid fa-rotate-left text-[9px]"></i> Reset</button>' +
                     '</div>' +
                 '</div>' +
             '</div>';
@@ -549,11 +627,11 @@
                             '</div>' +
                             '<div>' +
                                 '<h3 class="phone-title text-slate-100">' + (idx + 1) + '. ' + dev.name + '</h3>' +
-                                '<p class="text-[10px] text-slate-400">' + totalTasks + ' ታስኮች</p>' +
+                                '<p class="text-[10px] text-slate-400">' + totalTasks + ' tasks</p>' +
                             '</div>' +
                         '</div>' +
                         '<div class="flex items-center gap-2">' +
-                            '<span id="badge-' + dev.id + '" class="text-[10px] font-bold px-2 py-1 rounded-full bg-slate-700 text-slate-300 transition-all">በሂደት ላይ</span>' +
+                            '<span id="badge-' + dev.id + '" class="text-[10px] font-bold px-2 py-1 rounded-full bg-slate-700 text-slate-300 transition-all">Pending</span>' +
                             '<span id="pct-' + dev.id + '" class="text-lg font-extrabold text-amber-400">0%</span>' +
                         '</div>' +
                     '</div>' +
@@ -575,7 +653,7 @@
                                     '<label for="' + p.id + '_master" class="task-label text-amber-300 cursor-pointer select-none truncate">' + p.name + '</label>' +
                                 '</div>' +
                                 '<div class="flex items-center gap-1.5 flex-shrink-0 ml-2">' +
-                                    '<button class="toggle-btn btn-view-tracker" data-target="' + p.id + '_stats" title="የነጥብና ቀን መቆጣጠሪያ">' +
+                                    '<button class="toggle-btn btn-view-tracker" data-target="' + p.id + '_stats" title="Toggle Tracker Panel">' +
                                         '<i class="fa-solid fa-chart-line"></i>' +
                                     '</button>' +
                                     '<button class="toggle-btn text-slate-400 hover:text-white p-1 transition" data-target="' + p.id + '_details">' +
@@ -587,11 +665,11 @@
                             '<div id="' + p.id + '_details" class="hidden p-2.5 border-t border-slate-700/30 space-y-2 bg-slate-900/30">' +
                                 '<div class="flex items-center gap-2.5 pl-1">' +
                                     '<input type="checkbox" id="' + p.id + '_live" data-type="sub" data-prefix="' + p.id + '" class="checkbox-custom sub accent-emerald-500 rounded cursor-pointer flex-shrink-0">' +
-                                    '<label for="' + p.id + '_live" class="sub-task-label text-slate-300 cursor-pointer select-none">Live (1 ሰዓት)</label>' +
+                                    '<label for="' + p.id + '_live" class="sub-task-label text-slate-300 cursor-pointer select-none">Live (1 hr)</label>' +
                                 '</div>' +
                                 '<div class="flex items-center gap-2.5 pl-1">' +
                                     '<input type="checkbox" id="' + p.id + '_party" data-type="sub" data-prefix="' + p.id + '" class="checkbox-custom sub accent-emerald-500 rounded cursor-pointer flex-shrink-0">' +
-                                    '<label for="' + p.id + '_party" class="sub-task-label text-slate-300 cursor-pointer select-none">Party (1 ሰዓት)</label>' +
+                                    '<label for="' + p.id + '_party" class="sub-task-label text-slate-300 cursor-pointer select-none">Party (1 hr)</label>' +
                                 '</div>' +
                             '</div>' +
                         '</div>';
@@ -610,7 +688,7 @@
                                     '<input type="checkbox" id="' + t.id + '" data-type="standalone" data-acc="' + t.id + '" data-app="tello" class="checkbox-custom w-5 h-5 accent-emerald-500 rounded cursor-pointer flex-shrink-0">' +
                                     '<label for="' + t.id + '" class="task-label text-slate-200 cursor-pointer select-none truncate">' + t.name + '</label>' +
                                 '</div>' +
-                                '<button class="toggle-btn btn-view-tracker flex-shrink-0 ml-2" data-target="' + t.id + '_stats" title="የነጥብና ቀን መቆጣጠሪያ">' +
+                                '<button class="toggle-btn btn-view-tracker flex-shrink-0 ml-2" data-target="' + t.id + '_stats" title="Toggle Tracker Panel">' +
                                     '<i class="fa-solid fa-chart-line"></i>' +
                                 '</button>' +
                             '</div>' +
@@ -631,7 +709,7 @@
                                     '<input type="checkbox" id="' + k.id + '" data-type="standalone" data-acc="' + k.id + '" data-app="kaya" class="checkbox-custom w-5 h-5 accent-emerald-500 rounded cursor-pointer flex-shrink-0">' +
                                     '<label for="' + k.id + '" class="task-label text-slate-200 cursor-pointer select-none truncate">' + k.name + '</label>' +
                                 '</div>' +
-                                '<button class="toggle-btn btn-view-tracker flex-shrink-0 ml-2" data-target="' + k.id + '_stats" title="የነጥብና ቀን መቆጣጠሪያ">' +
+                                '<button class="toggle-btn btn-view-tracker flex-shrink-0 ml-2" data-target="' + k.id + '_stats" title="Toggle Tracker Panel">' +
                                     '<i class="fa-solid fa-chart-line"></i>' +
                                 '</button>' +
                             '</div>' +
@@ -652,7 +730,7 @@
                                     '<input type="checkbox" id="' + y.id + '" data-type="standalone" data-acc="' + y.id + '" data-app="yago" class="checkbox-custom w-5 h-5 accent-emerald-500 rounded cursor-pointer flex-shrink-0">' +
                                     '<label for="' + y.id + '" class="task-label text-slate-200 cursor-pointer select-none truncate">' + y.name + '</label>' +
                                 '</div>' +
-                                '<button class="toggle-btn btn-view-tracker flex-shrink-0 ml-2" data-target="' + y.id + '_stats" title="የነጥብና ቀን መቆጣጠሪያ">' +
+                                '<button class="toggle-btn btn-view-tracker flex-shrink-0 ml-2" data-target="' + y.id + '_stats" title="Toggle Tracker Panel">' +
                                     '<i class="fa-solid fa-chart-line"></i>' +
                                 '</button>' +
                             '</div>' +
@@ -693,7 +771,7 @@
                         const lines = [
                             "⚠️ ማስጠንቀቂያ",
                             "",
-                            '"' + appName + '" ታስክን ለመሰረዝ እየሞከሩ ነው።',
+                            '"' + appName + '" ማጥፋት (uncheck ማድረግ) ይፈልጋሉ?',
                             "",
                             "እርግጠኛ ነዎት?"
                         ];
@@ -711,7 +789,7 @@
                             live.checked = this.checked;
                             party.checked = this.checked;
                         }
-                        updateAccountDays(prefix, 'poppo', this.checked);
+                        updateAccountPointsIncrement(prefix, 'poppo', this.checked);
                     } else if (type === 'sub') {
                         const master = document.getElementById(prefix + '_master');
                         const live = document.getElementById(prefix + '_live');
@@ -720,14 +798,14 @@
                             const bothChecked = (live.checked && party.checked);
                             if (master.checked !== bothChecked) {
                                 master.checked = bothChecked;
-                                updateAccountDays(prefix, 'poppo', bothChecked);
+                                updateAccountPointsIncrement(prefix, 'poppo', bothChecked);
                             }
                         }
                     } else if (type === 'standalone') {
                         const accId = this.getAttribute('data-acc');
                         const appType = this.getAttribute('data-app');
                         if (accId && appType) {
-                            updateAccountDays(accId, appType, this.checked);
+                            updateAccountPointsIncrement(accId, appType, this.checked);
                         }
                     }
                     syncProgressToFirebase();
@@ -741,7 +819,7 @@
             });
             
             document.getElementById('reset-btn').addEventListener('click', function() {
-                if (confirm('የዛሬ የታስክ ቲክ ምልክቶች ዳግም ይጀመራሉ። የቀንና የነጥብ መቁጠሪያው ግን አይጠፉም። እርግጠኛ ነዎት?')) {
+                if (confirm("የዛሬውን ምልክቶች (ticks) ብቻ ማጥፋት ይፈልጋሉ? የፖይንት እና የቀን ሪኮርድዎ ይቀመጠል።")) {
                     autoResetTasks();
                 }
             });
@@ -788,14 +866,14 @@
                 if (pct) pct.innerText = devPct + '%';
                 if (badge) {
                     if (devPct === 100) {
-                        badge.innerText = '✓ ተጠናቋል';
+                        badge.innerText = '✓ Completed';
                         badge.className = 'completed-badge text-[10px] font-bold px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all';
                         phonesDone++;
                     } else if (devPct > 0) {
-                        badge.innerText = 'በሂደት ላይ';
+                        badge.innerText = 'In Progress';
                         badge.className = 'text-[10px] font-bold px-2 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 transition-all';
                     } else {
-                        badge.innerText = 'አልተጀመረም';
+                        badge.innerText = 'Pending';
                         badge.className = 'text-[10px] font-bold px-2 py-1 rounded-full bg-slate-700 text-slate-400 border border-slate-600 transition-all';
                     }
                 }
@@ -843,7 +921,7 @@
                 if (data) {
                     daysCache = data;
                     Object.keys(data).forEach(accId => {
-                        localStorage.setItem(accId + '_days_worked', data[accId]);
+                        localStorage.setItem(accId + '_earned_points', data[accId]);
                         let appType = 'poppo';
                         if (accId.includes('tello')) appType = 'tello';
                         else if (accId.includes('kaya')) appType = 'kaya';
