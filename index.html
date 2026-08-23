@@ -21,20 +21,24 @@
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
 
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
         .device-card {
-            animation: slideUp 0.5s ease-out forwards;
+            animation: fadeIn 0.3s ease-out forwards;
             opacity: 0;
         }
-        .device-card:nth-child(1) { animation-delay: 0.05s; }
-        .device-card:nth-child(2) { animation-delay: 0.1s; }
-        .device-card:nth-child(3) { animation-delay: 0.15s; }
-        .device-card:nth-child(4) { animation-delay: 0.2s; }
-        .device-card:nth-child(5) { animation-delay: 0.25s; }
-        .device-card:nth-child(6) { animation-delay: 0.3s; }
+        .device-card:nth-child(1) { animation-delay: 0.03s; }
+        .device-card:nth-child(2) { animation-delay: 0.06s; }
+        .device-card:nth-child(3) { animation-delay: 0.09s; }
+        .device-card:nth-child(4) { animation-delay: 0.12s; }
+        .device-card:nth-child(5) { animation-delay: 0.15s; }
+        .device-card:nth-child(6) { animation-delay: 0.18s; }
+
+        .account-item-card {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
 
         .phone-title { font-size: 1.15rem; font-weight: 800; letter-spacing: 0.02em; }
         .task-label { font-weight: 600; font-size: 0.9rem; line-height: 1.4; }
@@ -46,16 +50,22 @@
         .checkbox-custom:checked + label { text-decoration: line-through; color: #10b981; font-weight: 700; transition: all 0.3s ease; }
 
         .device-progress-bg { background: linear-gradient(90deg, #1e293b 0%, #334155 100%); }
-        .device-progress-fill { background: linear-gradient(90deg, #f59e0b 0%, #10b981 100%); transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        .device-progress-fill { background: linear-gradient(90deg, #f59e0b 0%, #10b981 100%); transition: width 0.5s ease; }
 
         .glass-header { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
         .stat-card { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 1px solid rgba(51, 65, 85, 0.5); }
 
         @keyframes pulse-green {
             0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-            50% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
         }
         .completed-badge { animation: pulse-green 2s infinite; }
+
+        @keyframes pulse-urgent {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.03); opacity: 0.85; }
+        }
+        .urgent-pulse { animation: pulse-urgent 1.2s infinite; }
 
         @keyframes blink-animation {
             0% { opacity: 1; }
@@ -64,7 +74,7 @@
         }
         .blink-icon { animation: blink-animation 1.5s infinite; }
 
-        .toggle-btn i { transition: transform 0.3s ease; }
+        .toggle-btn i { transition: transform 0.2s ease; }
         .toggle-btn.open i { transform: rotate(180deg); }
 
         .btn-view-tracker {
@@ -125,7 +135,6 @@
             text-align: center;
         }
 
-        /* Modal Background completely transparent, only the box has gradient */
         .custom-modal-bg { background: transparent; pointer-events: none; }
         .custom-modal-box {
             background: linear-gradient(135deg, rgba(245, 158, 11, 0.95) 0%, rgba(16, 185, 129, 0.95) 100%);
@@ -135,21 +144,45 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(16, 185, 129, 0.3);
             pointer-events: auto;
         }
+
+        /* Filter Tab Styles with Soft Green/Amber Gradient Background */
+        .filter-container-bg {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(245, 158, 11, 0.12) 100%);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .filter-tab {
+            background: rgba(15, 23, 42, 0.6);
+            color: #94a3b8;
+            border: 1px solid #334155;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 9999px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .filter-tab.active {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+            border-color: #34d399;
+            box-shadow: 0 3px 10px rgba(16, 185, 129, 0.35);
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen pb-20">
 
-    <!-- Custom Popup Modal Container (Transparent background so tasks behind remain 100% clear) -->
+    <!-- Custom Popup Modal Container -->
     <div id="custom-modal" class="fixed inset-0 z-[100] custom-modal-bg flex items-center justify-center p-4 hidden">
-        <div class="custom-modal-box w-full max-w-sm rounded-3xl overflow-hidden animate-[slideUp_0.3s_ease-out] text-slate-950 p-6 text-center">
+        <div class="custom-modal-box w-full max-w-sm rounded-3xl overflow-hidden animate-[fadeIn_0.2s_ease-out] text-slate-950 p-6 text-center">
             <div class="w-14 h-14 rounded-2xl bg-slate-950/15 border border-white/20 flex items-center justify-center mx-auto mb-3 shadow-inner">
                 <i id="custom-modal-icon" class="fa-solid fa-triangle-exclamation text-slate-950 text-2xl"></i>
             </div>
-            <h3 id="custom-modal-title" class="text-lg font-extrabold text-slate-950 mb-2 tracking-wide">ማረጋገጫ</h3>
-            <p id="custom-modal-message" class="text-xs font-semibold text-slate-900 mb-6 leading-relaxed px-2">ይህን ተግባር መፈጸም ይፈልጋሉ?</p>
+            <h3 id="custom-modal-title" class="text-lg font-extrabold text-slate-950 mb-2 tracking-wide">Confirmation</h3>
+            <p id="custom-modal-message" class="text-xs font-semibold text-slate-900 mb-6 leading-relaxed px-2">Do you want to proceed with this action?</p>
             <div id="custom-modal-actions" class="flex gap-3 justify-center">
-                <button id="custom-modal-cancel" class="flex-1 bg-slate-900/30 hover:bg-slate-900/50 text-slate-950 font-bold text-xs py-3 px-4 rounded-xl border border-white/20 transition active:scale-95 shadow-sm">ሰርዝ</button>
-                <button id="custom-modal-confirm" class="flex-1 bg-slate-950 hover:bg-slate-900 text-amber-400 font-extrabold text-xs py-3 px-4 rounded-xl transition shadow-xl active:scale-95">እሺ</button>
+                <button id="custom-modal-cancel" class="flex-1 bg-slate-900/30 hover:bg-slate-900/50 text-slate-950 font-bold text-xs py-3 px-4 rounded-xl border border-white/20 transition active:scale-95 shadow-sm">Cancel</button>
+                <button id="custom-modal-confirm" class="flex-1 bg-slate-950 hover:bg-slate-900 text-amber-400 font-extrabold text-xs py-3 px-4 rounded-xl transition shadow-xl active:scale-95">OK</button>
             </div>
         </div>
     </div>
@@ -164,7 +197,7 @@
                 <div>
                     <h1 class="text-base md:text-lg font-bold text-amber-400 leading-tight">Device & Task Controller</h1>
                     <p id="ethiopian-date-display" class="text-[11px] text-emerald-400 font-semibold mt-0.5">
-                        <i class="fa-regular fa-calendar-days mr-1"></i> ቀኑ በመጫን ላይ...
+                        <i class="fa-regular fa-calendar-days mr-1"></i> Loading date...
                     </p>
                 </div>
             </div>
@@ -173,19 +206,76 @@
                     <i class="fa-regular fa-clock text-amber-400 text-xs"></i>
                     <span id="countdown-timer" class="text-sm font-mono font-bold text-amber-400 tracking-wider">00:00:00</span>
                 </div>
-                <button id="notify-btn" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all shadow-lg shadow-amber-500/20">
-                    <i class="fa-solid fa-bell"></i> <span class="hidden sm:inline">Sound Test</span>
+                <button id="notify-btn" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all shadow-lg shadow-amber-500/20" title="Sound Test">
+                    <i class="fa-solid fa-bell"></i>
                 </button>
+                
+                <!-- Professional Dropdown Menu -->
+                <div class="relative">
+                    <button id="menu-toggle-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition active:scale-95">
+                        <i class="fa-solid fa-bars text-amber-400"></i> Menu
+                    </button>
+                    <div id="dropdown-menu" class="hidden absolute right-0 mt-2 w-56 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl py-1 z-50 overflow-hidden">
+                        <div class="py-1">
+                            <button id="menu-accounts-btn" class="w-full text-left px-4 py-3 text-xs font-semibold text-slate-200 hover:bg-slate-800/80 flex items-center justify-between transition">
+                                <span class="flex items-center gap-2"><i class="fa-solid fa-users-viewfinder text-amber-400"></i> Accounts Tracker</span>
+                                <i class="fa-solid fa-chevron-right text-[10px] text-slate-500"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </header>
+
+    <!-- Poppo Accounts Modal / Drawer with Filters -->
+    <div id="accounts-modal" class="fixed inset-0 z-[90] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-700 w-full max-w-lg rounded-3xl p-5 shadow-2xl animate-[fadeIn_0.2s_ease-out] max-h-[90vh] flex flex-col">
+            
+            <!-- Modal Header with No Overlap -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3 flex-shrink-0">
+                <div class="flex items-center gap-2.5 min-w-0 pr-2">
+                    <div class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 flex-shrink-0">
+                        <i class="fa-solid fa-chart-line text-sm"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h3 class="text-sm font-bold text-slate-100 truncate">Accounts Tracker</h3>
+                        <p class="text-[10px] text-slate-400 truncate">ቀናት እና ነጥቦች መከታተያ</p>
+                    </div>
+                </div>
+                <button id="close-accounts-modal" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition flex-shrink-0">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Filter Buttons Row with Soft Green/Amber Gradient Background -->
+            <div class="filter-container-bg p-2 rounded-2xl mb-3 flex-shrink-0">
+                <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                    <button class="filter-tab active" data-filter="all">All</button>
+                    <button class="filter-tab" data-filter="poppo">Poppo</button>
+                    <button class="filter-tab" data-filter="tello">Tello</button>
+                    <button class="filter-tab" data-filter="kaya">Kaya</button>
+                    <button class="filter-tab" data-filter="yago">Yago</button>
+                </div>
+            </div>
+
+            <!-- Accounts List -->
+            <div id="accounts-list-container" class="space-y-3 overflow-y-auto pr-1 flex-1">
+                <!-- Dynamically populated and sorted by remaining days -->
+            </div>
+            
+            <div class="pt-3 border-t border-slate-800 mt-3 text-center flex-shrink-0">
+                <p class="text-[10px] text-slate-500">🚀 Keep going! Accounts are sorted by remaining days.</p>
+            </div>
+        </div>
+    </div>
 
     <main class="max-w-6xl mx-auto px-4 mt-5">
 
         <!-- Congrats Banner -->
         <div id="congrats-banner" class="hidden bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/50 text-emerald-300 p-4 rounded-2xl mb-5 text-center shadow-lg shadow-emerald-500/10">
             <h2 class="text-base font-bold flex items-center justify-center gap-2">
-                <span class="text-xl">🎉</span> እንኳን ደስ አሎት! የዛሬዎቹ ስራዎች ሙሉ በሙሉ ተጠናቀዋል!
+                <span class="text-xl">🎉</span> Congratulations! All tasks for today are fully completed!
             </h2>
         </div>
 
@@ -249,7 +339,7 @@
                 </div>
             </div>
             <div class="w-full bg-slate-800 h-5 rounded-full overflow-hidden p-0.5 shadow-inner">
-                <div id="progress-bar" class="bg-gradient-to-r from-amber-500 via-yellow-400 to-emerald-500 h-full rounded-full transition-all duration-700 relative" style="width: 0%">
+                <div id="progress-bar" class="bg-gradient-to-r from-amber-500 via-yellow-400 to-emerald-500 h-full rounded-full transition-all duration-500 relative" style="width: 0%">
                     <div class="absolute inset-0 bg-white/20 rounded-full" style="background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);"></div>
                 </div>
             </div>
@@ -261,7 +351,7 @@
 
         <!-- Footer -->
         <div class="mt-8 text-center pb-4">
-            <p class="text-[10px] text-slate-600">Multi-Device Task Controller v2.9</p>
+            <p class="text-[10px] text-slate-600">Multi-Device Task Controller v3.1</p>
         </div>
     </main>
 
@@ -269,19 +359,24 @@
     <script>
         window.requestNotificationPermission = function() {
             try {
-                if ('vibrate' in navigator) {
-                    navigator.vibrate([200, 100, 200]);
-                }
-                const audio = new Audio('https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg');
-                audio.play().catch(e => console.log('Audio play failed:', e));
-                showCustomAlert('ድምፅ ማስተካከል', 'Audio alert tested successfully!');
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+                gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.4);
+                showCustomAlert('Sound Test', 'Audio alert tested successfully!');
             } catch (err) {
                 console.log('Audio notification error: ', err);
-                showCustomAlert('ስህተት', 'Could not play audio.');
+                showCustomAlert('Error', 'Could not play audio.');
             }
         };
 
-        // Custom Modal Function to replace standard alert/confirm
         function showCustomConfirm(title, message, onConfirm) {
             const modal = document.getElementById('custom-modal');
             const titleEl = document.getElementById('custom-modal-title');
@@ -291,6 +386,7 @@
 
             titleEl.innerText = title;
             msgEl.innerText = message;
+            cancelBtn.style.display = 'block';
             modal.classList.remove('hidden');
 
             const newConfirmBtn = confirmBtn.cloneNode(true);
@@ -318,8 +414,8 @@
 
             titleEl.innerText = title;
             msgEl.innerText = message;
-            cancelBtn.style.display = 'none'; // Hide cancel button for simple alerts
-            confirmBtn.innerText = 'እሺ';
+            cancelBtn.style.display = 'none'; 
+            confirmBtn.innerText = 'OK';
             modal.classList.remove('hidden');
 
             const newConfirmBtn = confirmBtn.cloneNode(true);
@@ -327,7 +423,7 @@
 
             newConfirmBtn.addEventListener('click', () => {
                 modal.classList.add('hidden');
-                cancelBtn.style.display = 'block'; // Restore cancel button
+                cancelBtn.style.display = 'block';
             });
         }
     </script>
@@ -352,10 +448,10 @@
         const daysRef = db.ref('appState/days');
 
         const appRules = {
-            poppo: { daily: 2800, target: 100000, targetFormatted: "100k", maxDays: 36 },
-            tello: { daily: 10000, target: 1000000, targetFormatted: "1m", maxDays: 100 },
-            kaya:  { daily: 1000, target: 100000, targetFormatted: "100k", maxDays: 100 },
-            yago:  { daily: 1200, target: 100000, targetFormatted: "100k", maxDays: 84 }
+            poppo: { daily: 2800, target: 100000, targetFormatted: "100k", maxDays: 36, name: "Poppo", badgeColor: "bg-rose-500/20 text-rose-400 border-rose-500/30" },
+            tello: { daily: 10000, target: 1000000, targetFormatted: "1m", maxDays: 100, name: "Tello", badgeColor: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+            kaya:  { daily: 1000, target: 100000, targetFormatted: "100k", maxDays: 100, name: "Kaya", badgeColor: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
+            yago:  { daily: 1200, target: 100000, targetFormatted: "100k", maxDays: 84, name: "Yago", badgeColor: "bg-amber-500/20 text-amber-400 border-amber-500/30" }
         };
 
         const devicesData = [
@@ -419,6 +515,7 @@
         let celebrated = false;
         let daysCache = {};
         let editingStates = {};
+        let currentFilter = 'all';
 
         function formatPoints(points) {
             if (isNaN(points)) return "0";
@@ -436,8 +533,10 @@
             const remainingDays = Math.max(0, Math.ceil(remainingPoints / rule.daily));
 
             return { 
-                daysWorked: daysWorked, 
-                earnedPoints: earnedPoints, 
+                accId,
+                appType,
+                daysWorked, 
+                earnedPoints, 
                 earnedFormatted: formatPoints(earnedPoints),
                 remainingDays, 
                 target: rule.target,
@@ -478,10 +577,11 @@
                         '</div>' +
                     '</div>';
             }
+            updatePoppoAccountsModalList();
         }
 
         window.toggleEditPoints = function(accId, appType) {
-            showCustomConfirm('ማስተካከል', 'የዚህን አካውንት ፖይንት ማስተካከል ይፈልጋሉ?', (confirmed) => {
+            showCustomConfirm('Edit Points', 'Do you want to edit points for this account?', (confirmed) => {
                 if (confirmed) {
                     editingStates[accId] = true;
                     refreshSingleTrackerUI(accId, appType);
@@ -494,7 +594,7 @@
             if (inputElem) {
                 let newPoints = parseFloat(inputElem.value);
                 if (isNaN(newPoints) || newPoints < 0) {
-                    showCustomAlert('ስህተት', 'እባክዎ ትክክለኛ የፖይንት ቁጥር ያስገቡ!');
+                    showCustomAlert('Error', 'Please enter a valid points value!');
                     return;
                 }
                 
@@ -502,7 +602,7 @@
                 let exactPoints = newPoints;
                 let calculatedDays = Math.floor(exactPoints / rule.daily);
 
-                showCustomConfirm('ማስቀመጥ', 'የተገባው ፖይንት (' + exactPoints + ' pts) እና ቀን (' + calculatedDays + ' ቀን) ይቀመጥ?', (confirmed) => {
+                showCustomConfirm('Save Points', 'Save entered points (' + exactPoints + ' pts) and days (' + calculatedDays + ' days)?', (confirmed) => {
                     if (confirmed) {
                         daysCache[accId] = exactPoints;
                         localStorage.setItem(accId + '_earned_points', exactPoints);
@@ -515,7 +615,7 @@
         }
 
         window.resetAccountDays = function(accId, appType) {
-            showCustomConfirm('መደለዝ', 'የዚህን አካውንት ፖይንት እና ቀን ወደ 0 መመለስ ይፈልጋሉ?', (confirmed) => {
+            showCustomConfirm('Reset Account', 'Do you want to reset this account points and days to 0?', (confirmed) => {
                 if (confirmed) {
                     editingStates[accId] = false;
                     daysCache[accId] = 0;
@@ -524,6 +624,69 @@
                     refreshSingleTrackerUI(accId, appType);
                 }
             });
+        }
+
+        function updatePoppoAccountsModalList() {
+            const container = document.getElementById('accounts-list-container');
+            if (!container) return;
+
+            let allAccounts = [];
+            devicesData.forEach(dev => {
+                dev.poppo.forEach(p => {
+                    allAccounts.push({ name: p.name, devName: dev.name, color: dev.color, ...getAccountStats(p.id, 'poppo') });
+                });
+                dev.tello.forEach(t => {
+                    allAccounts.push({ name: t.name, devName: dev.name, color: dev.color, ...getAccountStats(t.id, 'tello') });
+                });
+                dev.kaya.forEach(k => {
+                    allAccounts.push({ name: k.name, devName: dev.name, color: dev.color, ...getAccountStats(k.id, 'kaya') });
+                });
+                dev.yago.forEach(y => {
+                    allAccounts.push({ name: y.name, devName: dev.name, color: dev.color, ...getAccountStats(y.id, 'yago') });
+                });
+            });
+
+            // Filter logic
+            let filtered = allAccounts.filter(acc => {
+                if (currentFilter === 'all') return true;
+                return acc.appType === currentFilter;
+            });
+
+            // Sorting by remaining days ascending (fewest days left first)
+            filtered.sort((a, b) => a.remainingDays - b.remainingDays);
+
+            let html = '';
+            filtered.forEach(acc => {
+                const isUrgent = acc.remainingDays <= 10;
+                const ruleConfig = appRules[acc.appType];
+                
+                html += '<div class="account-item-card bg-slate-800/60 border ' + (isUrgent ? 'border-amber-500/80 shadow-lg shadow-amber-500/10' : 'border-slate-700/50') + ' rounded-2xl p-3 flex items-center justify-between gap-3">' +
+                    '<div class="flex items-center gap-3 min-w-0">' +
+                        '<div class="w-10 h-10 rounded-xl bg-gradient-to-br ' + acc.color + ' flex items-center justify-center text-white flex-shrink-0 shadow">' +
+                            '<i class="fa-solid fa-video text-xs"></i>' +
+                        '</div>' +
+                        '<div class="min-w-0">' +
+                            '<div class="flex items-center gap-1.5">' +
+                                '<h4 class="text-xs font-bold text-slate-100 truncate">' + acc.name + '</h4>' +
+                                '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase ' + ruleConfig.badgeColor + '">' + acc.appType + '</span>' +
+                            '</div>' +
+                            '<p class="text-[10px] text-slate-400 mt-0.5">Device: <span class="text-slate-300 font-semibold">' + acc.devName + '</span> | Days Done: <span class="text-amber-400 font-bold">' + acc.daysWorked + 'd</span></p>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="text-right flex-shrink-0">' +
+                        '<div class="' + (isUrgent ? 'text-amber-400 font-extrabold text-xs urgent-pulse bg-amber-500/10 px-2.5 py-1 rounded-xl border border-amber-500/40' : 'text-emerald-400 font-bold text-xs') + '">' +
+                            acc.remainingDays + ' DAYS LEFT!' +
+                        '</div>' +
+                        '<span class="text-[9px] text-slate-400 block mt-1">' + acc.earnedFormatted + ' / ' + acc.targetFormatted + ' pts</span>' +
+                    '</div>' +
+                '</div>';
+            });
+
+            if (filtered.length === 0) {
+                html = '<p class="text-center text-xs text-slate-500 py-6">No accounts found for this filter.</p>';
+            }
+
+            container.innerHTML = html;
         }
 
         function toEthiopianDate(date) {
@@ -824,6 +987,45 @@
         }
 
         function setupEventListeners() {
+            const menuToggle = document.getElementById('menu-toggle-btn');
+            const dropdownMenu = document.getElementById('dropdown-menu');
+            const accountsModal = document.getElementById('accounts-modal');
+            const closeAccountsModal = document.getElementById('close-accounts-modal');
+            const menuAccountsBtn = document.getElementById('menu-accounts-btn');
+
+            menuToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdownMenu.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', () => {
+                dropdownMenu.classList.add('hidden');
+            });
+
+            dropdownMenu.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+
+            menuAccountsBtn.addEventListener('click', () => {
+                dropdownMenu.classList.add('hidden');
+                updatePoppoAccountsModalList();
+                accountsModal.classList.remove('hidden');
+            });
+
+            closeAccountsModal.addEventListener('click', () => {
+                accountsModal.classList.add('hidden');
+            });
+
+            // Filter Tabs Event Listeners
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    currentFilter = this.getAttribute('data-filter');
+                    updatePoppoAccountsModalList();
+                });
+            });
+
             document.querySelectorAll('.toggle-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const targetId = this.getAttribute('data-target');
@@ -848,7 +1050,7 @@
 
                     if (!checkboxElem.checked) {
                         const appName = getAppNameFromId(checkboxElem.id);
-                        showCustomConfirm('ማረጋገጫ', '"' + appName + '" ማጥፋት ይፈልጋሉ?', (confirmed) => {
+                        showCustomConfirm('Confirmation', 'Do you want to uncheck "' + appName + '"?', (confirmed) => {
                             if (!confirmed) {
                                 checkboxElem.checked = true;
                                 return;
@@ -869,7 +1071,7 @@
             });
             
             document.getElementById('reset-btn').addEventListener('click', function() {
-                showCustomConfirm('ማረጋገጫ', 'የዛሬውን ምልክቶች ብቻ ማጥፋት ይፈልጋሉ?', (confirmed) => {
+                showCustomConfirm('Confirmation', 'Do you want to reset today ticks only?', (confirmed) => {
                     if (confirmed) {
                         autoResetTasks();
                     }
