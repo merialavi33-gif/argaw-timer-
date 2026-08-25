@@ -52,7 +52,6 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-        /* Unified Menu & Modal Glassmorphism Backgrounds */
         .unified-glass-panel {
             background: rgba(15, 23, 42, 0.85) !important;
             backdrop-filter: blur(16px);
@@ -194,7 +193,6 @@
             box-shadow: 0 3px 10px rgba(16, 185, 129, 0.35);
         }
 
-        /* Phone Quick Filter Buttons */
         .phone-filter-btn {
             background: rgba(15, 23, 42, 0.75);
             border: 1px solid rgba(255, 255, 255, 0.12);
@@ -258,7 +256,6 @@
                     <i class="fa-solid fa-bell"></i>
                 </button>
                 
-                <!-- Professional Dropdown Menu -->
                 <div class="relative">
                     <button id="menu-toggle-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition active:scale-95">
                         <i class="fa-solid fa-bars text-amber-400"></i> Menu
@@ -276,7 +273,7 @@
         </div>
     </header>
 
-    <!-- Poppo Accounts Modal / Drawer with Filters -->
+    <!-- Accounts Modal / Drawer -->
     <div id="accounts-modal" class="fixed inset-0 z-[90] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
         <div class="unified-glass-panel w-full max-w-lg rounded-3xl p-5 shadow-2xl animate-[fadeIn_0.2s_ease-out] max-h-[90vh] flex flex-col">
             <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3 flex-shrink-0">
@@ -867,23 +864,25 @@
             let total = 0, done = 0;
             dev.poppo.forEach(p => {
                 total += 2;
-                if (document.getElementById(p.id + '_live') && document.getElementById(p.id + '_live').checked) done++;
-                if (document.getElementById(p.id + '_party') && document.getElementById(p.id + '_party').checked) done++;
+                const liveEl = document.getElementById(p.id + '_live');
+                const partyEl = document.getElementById(p.id + '_party');
+                if ((liveEl && liveEl.checked) || localStorage.getItem(p.id + '_live') === 'true') done++;
+                if ((partyEl && partyEl.checked) || localStorage.getItem(p.id + '_party') === 'true') done++;
             });
             dev.tello.forEach(t => {
                 total++;
                 const el = document.getElementById(t.id);
-                if (el && el.checked) done++;
+                if ((el && el.checked) || localStorage.getItem(t.id) === 'true') done++;
             });
             dev.kaya.forEach(k => {
                 total++;
                 const el = document.getElementById(k.id);
-                if (el && el.checked) done++;
+                if ((el && el.checked) || localStorage.getItem(k.id) === 'true') done++;
             });
             dev.yago.forEach(y => {
                 total++;
                 const el = document.getElementById(y.id);
-                if (el && el.checked) done++;
+                if ((el && el.checked) || localStorage.getItem(y.id) === 'true') done++;
             });
             return { total, done };
         }
@@ -927,8 +926,14 @@
         function renderDashboard() {
             const container = document.getElementById('devices-container');
             if (!container) return;
+
+            // ከመቀየሩ በፊት የነበሩትን የቲክ (Checkbox) ሁኔታዎች በ Temp Object እናስቀምጣለን
+            const savedStates = {};
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                savedStates[cb.id] = cb.checked;
+            });
+
             let fullHtml = '';
-            
             let filteredDevices = devicesData.filter(dev => {
                 if (currentPhoneFilter === 'all') return true;
                 return dev.id === currentPhoneFilter;
@@ -1062,6 +1067,18 @@
             });
             container.innerHTML = fullHtml;
             
+            // የቲክ ሁኔታዎችን (States) ከ savedStates ወይም ከ localStorage በመጠቀም መልሶ መጫን
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                if (savedStates[cb.id] !== undefined) {
+                    cb.checked = savedStates[cb.id];
+                } else {
+                    const storedVal = localStorage.getItem(cb.id);
+                    if (storedVal === 'true') {
+                        cb.checked = true;
+                    }
+                }
+            });
+
             rebindDynamicElements();
         }
 
@@ -1211,13 +1228,6 @@
         }
 
         function updateProgressLocal() {
-            const allSubAndStandalone = document.querySelectorAll('input[type="checkbox"]:not([id$="_master"])');
-            const total = allSubAndStandalone.length;
-            let checkedCount = 0;
-            allSubAndStandalone.forEach(cb => {
-                if (cb.checked) checkedCount++;
-            });
-
             devicesData.forEach(dev => {
                 const prog = getDeviceProgress(dev.id);
                 const devPct = prog.total > 0 ? Math.round((prog.done / prog.total) * 100) : 0;
@@ -1246,7 +1256,6 @@
                 if (prog.total > 0 && prog.done === prog.total) phonesDoneCount++;
             });
 
-            document.getElementById('stat-total').innerText = 17;
             let totalCheckedAll = 0;
             const allPossibleIds = [];
             devicesData.forEach(d => {
@@ -1256,7 +1265,7 @@
                 d.yago.forEach(y => { allPossibleIds.push(y.id); });
             });
             
-            totalPossibleTasksCount = allPossibleIds.length;
+            let totalPossibleTasksCount = allPossibleIds.length;
             allPossibleIds.forEach(id => {
                 const el = document.getElementById(id);
                 if ((el && el.checked) || localStorage.getItem(id) === 'true') {
