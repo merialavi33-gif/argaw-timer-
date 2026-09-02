@@ -296,6 +296,7 @@
                     <button class="filter-tab active" data-filter="all">All</button>
                     <button class="filter-tab" data-filter="poppo">Poppo</button>
                     <button class="filter-tab" data-filter="desdes">desdes</button>
+                    <button class="filter-tab" data-filter="tello">tello</button>
                     <button class="filter-tab" data-filter="kaya">Kaya</button>
                     <button class="filter-tab" data-filter="yago">Yago</button>
                 </div>
@@ -517,6 +518,7 @@
         const appRules = {
             poppo: { daily: 2800, target: 100000, targetFormatted: "100k", maxDays: 36, name: "Poppo", badgeColor: "bg-rose-500/20 text-rose-400 border-rose-500/30" },
             desdes: { daily: 10000, target: 1000000, targetFormatted: "1m", maxDays: 100, name: "desdes", badgeColor: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+            tello: { daily: 10000, target: 1000000, targetFormatted: "1m", maxDays: 100, name: "tello", badgeColor: "bg-teal-500/20 text-teal-400 border-teal-500/30" },
             kaya:  { daily: 1000, target: 100000, targetFormatted: "100k", maxDays: 100, name: "Kaya", badgeColor: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
             yago:  { daily: 1200, target: 100000, targetFormatted: "100k", maxDays: 84, name: "Yago", badgeColor: "bg-amber-500/20 text-amber-400 border-amber-500/30" }
         };
@@ -526,6 +528,7 @@
                 id: "pro", name: "Phone Pro", badge: "Pro", color: "from-blue-500 to-cyan-500",
                 poppo: [{ id: "pro_poppo_1", name: "Poppo (pro)", type: "poppo" }],
                 desdes: [],
+                tello: [{ id: "pro_tello_1", name: "tello live (kalkidan)", type: "tello" }],
                 kaya: [], yago: []
             },
             {
@@ -534,6 +537,7 @@
                 desdes: [
                     { id: "nova_tello_1", name: "desdes live (neli) - Party (2 hrs)", type: "desdes" }
                 ],
+                tello: [{ id: "nova_tello_2", name: "tello live (bruksol12)", type: "tello" }],
                 kaya: [{ id: "nova_kaya_1", name: "Kaya (abigia) - Party (2 hrs)", type: "kaya" }],
                 yago: []
             },
@@ -541,6 +545,7 @@
                 id: "eh", name: "Phone EH", badge: "EH", color: "from-orange-500 to-red-500",
                 poppo: [{ id: "eh_poppo_1", name: "Poppo (lavish esha)", type: "poppo" }],
                 desdes: [],
+                tello: [{ id: "eh_tello_1", name: "tello live (eftah)", type: "tello" }],
                 kaya: [{ id: "eh_kaya_1", name: "Kaya (kayakal) - Party (2 hrs)", type: "kaya" }],
                 yago: []
             },
@@ -550,6 +555,7 @@
                 desdes: [
                     { id: "yab_tello_1", name: "desdes live (afi man) - Party (2 hrs)", type: "desdes" }
                 ],
+                tello: [{ id: "yab_tello_2", name: "tello live (emanda)", type: "tello" }],
                 kaya: [],
                 yago: [{ id: "yab_yago_1", name: "Yago (agb man) - Party (1 hr)", type: "yago" }]
             },
@@ -557,6 +563,7 @@
                 id: "zte", name: "Phone ZTE", badge: "ZTE", color: "from-indigo-500 to-violet-500",
                 poppo: [{ id: "zte_poppo_1", name: "Poppo (hiri mon)", type: "poppo" }],
                 desdes: [],
+                tello: [{ id: "zte_tello_1", name: "tello live (tsi1229)", type: "tello" }],
                 kaya: [{ id: "zte_kaya_1", name: "Kaya (gigi.m) - Party (2 hrs)", type: "kaya" }],
                 yago: []
             },
@@ -564,6 +571,7 @@
                 id: "readspark", name: "Phone 📕 spark", badge: "Read Spark", color: "from-rose-500 to-pink-500",
                 poppo: [{ id: "readspark_poppo_1", name: "Poppo (neli jack)", type: "poppo" }],
                 desdes: [],
+                tello: [{ id: "readspark_tello_1", name: "tello live (mariya lavi)", type: "tello" }],
                 kaya: [{ id: "readspark_kaya_1", name: "Kaya (mama) - Party (2 hrs)", type: "kaya" }],
                 yago: []
             }
@@ -695,6 +703,9 @@
                 });
                 dev.desdes.forEach(t => {
                     allAccounts.push({ name: t.name, devName: dev.name, color: dev.color, ...getAccountStats(t.id, 'desdes') });
+                });
+                dev.tello.forEach(t => {
+                    allAccounts.push({ name: t.name, devName: dev.name, color: dev.color, ...getAccountStats(t.id, 'tello') });
                 });
                 dev.kaya.forEach(k => {
                     allAccounts.push({ name: k.name, devName: dev.name, color: dev.color, ...getAccountStats(k.id, 'kaya') });
@@ -833,7 +844,8 @@
             if (id.indexOf('_master') !== -1) return 'Poppo Full Task';
             if (id.indexOf('_live') !== -1) return 'Poppo Live';
             if (id.indexOf('_party') !== -1) return 'Poppo Party';
-            if (id.indexOf('tello') !== -1) return 'desdes live';
+            if (id.indexOf('tello') !== -1) return 'tello live';
+            if (id.indexOf('desdes') !== -1) return 'desdes live';
             if (id.indexOf('kaya') !== -1) return 'Kaya';
             if (id.indexOf('yago') !== -1) return 'Yago';
             return 'This task';
@@ -843,6 +855,7 @@
             let count = 0;
             dev.poppo.forEach(p => { count += 2; });
             count += dev.desdes.length;
+            count += dev.tello.length;
             count += dev.kaya.length;
             count += dev.yago.length;
             return count;
@@ -860,6 +873,11 @@
                 if ((partyEl && partyEl.checked) || localStorage.getItem(p.id + '_party') === 'true') done++;
             });
             dev.desdes.forEach(t => {
+                total++;
+                const el = document.getElementById(t.id);
+                if ((el && el.checked) || localStorage.getItem(t.id) === 'true') done++;
+            });
+            dev.tello.forEach(t => {
                 total++;
                 const el = document.getElementById(t.id);
                 if ((el && el.checked) || localStorage.getItem(t.id) === 'true') done++;
@@ -1006,6 +1024,27 @@
                                 '</button>' +
                             '</div>' +
                             createTrackerBadgeHtml(t.id, 'desdes') +
+                        '</div>';
+                    });
+                }
+
+                if (dev.tello.length > 0) {
+                    fullHtml += '<div class="flex items-center gap-2 mt-2 mb-1">' +
+                        '<i class="fa-solid fa-tower-broadcast text-teal-400 text-[10px]"></i>' +
+                        '<p class="app-header text-teal-400">tello live <span class="text-slate-500">(' + dev.tello.length + ')</span></p>' +
+                    '</div>';
+                    dev.tello.forEach(t => {
+                        fullHtml += '<div class="account-item-card rounded-xl p-2.5 mb-2">' +
+                            '<div class="task-row flex items-center justify-between">' +
+                                '<div class="flex items-center gap-2.5 min-w-0">' +
+                                    '<input type="checkbox" id="' + t.id + '" data-type="standalone" data-acc="' + t.id + '" data-app="tello" class="checkbox-custom w-5 h-5 accent-emerald-500 rounded cursor-pointer flex-shrink-0">' +
+                                    '<label for="' + t.id + '" class="task-label text-slate-200 cursor-pointer select-none truncate">' + t.name + '</label>' +
+                                '</div>' +
+                                '<button class="toggle-btn btn-view-tracker flex-shrink-0 ml-2" data-target="' + t.id + '_stats" title="Toggle Tracker Panel">' +
+                                    '<i class="fa-solid fa-chart-line"></i>' +
+                                '</button>' +
+                            '</div>' +
+                            createTrackerBadgeHtml(t.id, 'tello') +
                         '</div>';
                     });
                 }
@@ -1249,6 +1288,7 @@
             devicesData.forEach(d => {
                 d.poppo.forEach(p => { allPossibleIds.push(p.id + '_live'); allPossibleIds.push(p.id + '_party'); });
                 d.desdes.forEach(t => { allPossibleIds.push(t.id); });
+                d.tello.forEach(t => { allPossibleIds.push(t.id); });
                 d.kaya.forEach(k => { allPossibleIds.push(k.id); });
                 d.yago.forEach(y => { allPossibleIds.push(y.id); });
             });
@@ -1312,7 +1352,8 @@
                     Object.keys(data).forEach(accId => {
                         localStorage.setItem(accId + '_earned_points', data[accId]);
                         let appType = 'poppo';
-                        if (accId.includes('tello')) appType = 'desdes';
+                        if (accId.includes('tello')) appType = 'tello';
+                        else if (accId.includes('desdes')) appType = 'desdes';
                         else if (accId.includes('kaya')) appType = 'kaya';
                         else if (accId.includes('yago')) appType = 'yago';
                         refreshSingleTrackerUI(accId, appType);
