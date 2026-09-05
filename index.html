@@ -200,7 +200,7 @@
             color: #cbd5e1;
             font-size: 0.75rem;
             font-weight: 600;
-            padding: 10px 16px;
+            padding: 8px 10px;
             border-radius: 12px;
             transition: all 0.2s ease;
             white-space: nowrap;
@@ -236,7 +236,7 @@
         </div>
     </div>
 
-    <!-- Header (Aligned with image layout) -->
+    <!-- Header -->
     <header class="glass-header border-b border-slate-800/60 sticky top-0 z-50">
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -316,7 +316,7 @@
             </h2>
         </div>
 
-        <!-- Date & Countdown Row (Matching photo layout) -->
+        <!-- Date & Countdown Row -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
             <div class="stat-card p-4">
                 <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold mb-1">Ethiopian Date</p>
@@ -335,7 +335,7 @@
             </div>
         </div>
 
-        <!-- Top Stats Row (2x2 matching photo) -->
+        <!-- Top Stats Row -->
         <div class="grid grid-cols-2 gap-3 mb-4">
             <div class="stat-card p-4">
                 <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold mb-1">Total Tasks</p>
@@ -376,15 +376,16 @@
             <h3 class="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Phones</h3>
         </div>
 
-        <!-- Quick Phone Filter Buttons Bar (Matching Photo Layout 2x3) -->
+        <!-- Quick Phone Filter Buttons Bar (በአራት ረድፍ / 4 Columns የተስተካከለ) -->
         <section class="mb-5">
-            <div class="grid grid-cols-3 gap-2.5" id="phone-filters-container">
+            <div class="grid grid-cols-4 gap-2" id="phone-filters-container">
                 <button class="phone-filter-btn active" data-phone="all">All</button>
                 <button class="phone-filter-btn" data-phone="pro">Pro</button>
                 <button class="phone-filter-btn" data-phone="nova">Nova</button>
                 <button class="phone-filter-btn" data-phone="eh">EH</button>
                 <button class="phone-filter-btn" data-phone="yab">Yab</button>
                 <button class="phone-filter-btn" data-phone="zte">ZTE</button>
+                <button class="phone-filter-btn col-span-2" data-phone="readspark">📕 Spark</button>
             </div>
         </section>
 
@@ -394,7 +395,7 @@
 
         <!-- Footer -->
         <div class="mt-8 text-center pb-4">
-            <p class="text-[10px] text-slate-500">Multi-Device Task Controller v3.3</p>
+            <p class="text-[10px] text-slate-500">Multi-Device Task Controller v3.4</p>
         </div>
     </main>
 
@@ -543,7 +544,7 @@
                 yago: []
             },
             {
-                id: "readspark", name: "Phone 📕 spark", badge: "Read Spark", color: "from-rose-500 to-pink-500",
+                id: "readspark", name: "Phone  📕Spark", badge: "Spark", color: "from-rose-500 to-pink-500",
                 poppo: [{ id: "readspark_poppo_1", name: "Poppo (neli jack)", type: "poppo" }],
                 desdes: [],
                 tello: [{ id: "readspark_tello_1", name: "tello live (mariya lavi)", type: "tello" }],
@@ -1286,7 +1287,7 @@
             document.getElementById('stat-total').innerText = totalPossibleTasksCount;
             document.getElementById('stat-done').innerText = totalCheckedAll;
             document.getElementById('stat-remaining').innerText = Math.max(0, totalPossibleTasksCount - totalCheckedAll);
-            document.getElementById('stat-phones-count') || (document.getElementById('stat-phones-done').innerText = phonesDoneCount + '/6');
+            document.getElementById('stat-phones-done').innerText = phonesDoneCount + '/' + devicesData.length;
 
             const congratsBanner = document.getElementById('congrats-banner');
             if (overallPercentage === 100) {
@@ -1328,7 +1329,7 @@
                         localStorage.setItem(accId + '_earned_points', data[accId]);
                         let appType = 'poppo';
                         if (accId.includes('tello')) appType = 'tello';
-                        else if (accId.includes('desdes')) appType, appType = 'desdes';
+                        else if (accId.includes('desdes')) appType = 'desdes';
                         else if (accId.includes('kaya')) appType = 'kaya';
                         else if (accId.includes('yago')) appType = 'yago';
                         refreshSingleTrackerUI(accId, appType);
